@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-[#F5F5F7] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] antialiased transition-colors duration-300;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+/* Apple Style Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-black/10 dark:bg-white/20 rounded-full hover:bg-black/20 dark:hover:bg-white/30 transition-colors;
+}
+
+/* Gantt Grid Lines */
+.gantt-grid {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+.dark .gantt-grid {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+.apple-card {
+  @apply bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] rounded-2xl;
+}
+
+.apple-button-base {
+  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50;
+}
+
+.apple-button-primary {
+  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm;
+}
+
+.apple-button-secondary {
+  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-white hover:bg-black/10 dark:hover:bg-white/20;
+}
+
+.apple-input {
+  @apply w-full px-4 py-2.5 bg-black/[0.03] dark:bg-white/5 border-none rounded-xl focus:ring-2 focus:ring-[#0071E3]/30 outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 text-[#1D1D1F] dark:text-white;
+}
+
+.task-bar-transition {
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.glass-nav {
+  @apply sticky top-0 z-50 bg-white/70 dark:bg-[#1C1C1E]/70 backdrop-blur-xl border-b border-black/5 dark:border-white/5;
+}

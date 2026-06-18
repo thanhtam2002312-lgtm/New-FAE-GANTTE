@@ -1,0 +1,6 @@
+{
+  "name": "FAE Project Gantt",
+  "description": "专业的 Socket 项目进度管理系统，支持 Excel 导入导出及状态颜色标识。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
