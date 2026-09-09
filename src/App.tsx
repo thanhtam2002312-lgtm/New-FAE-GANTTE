@@ -54,7 +54,7 @@ import EditPNModal from "./components/EditPNModal";
 import AddPNModal from "./components/AddPNModal";
 import { OverviewModal } from "./components/OverviewModal";
 import { ExcelView } from "./components/ExcelView";
-import { MacDesktopLayer } from "./components/MacDesktopLayer";
+import { MacDesktopLayer, DEFAULT_FALLBACK_URL } from "./components/MacDesktopLayer";
 import { GlassSelect } from "./components/GlassSelect";
 import { getBadgeColor } from "./utils/colors";
 import { get, set, del } from "idb-keyval";
@@ -1607,9 +1607,9 @@ export default function App() {
         <div 
           className="absolute inset-0 z-0 pointer-events-none transition-all duration-700" 
           style={{ 
-            background: savedCustomWp 
+            background: (savedCustomWp && !savedCustomWp.includes("photo-1506744038136-46273834b3fb"))
               ? `url(${savedCustomWp}) center/cover no-repeat` 
-              : "url(https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop) center/cover no-repeat",
+              : `url(${DEFAULT_FALLBACK_URL}) center/cover no-repeat`,
             backgroundColor: "#11141A"
           }}
         >

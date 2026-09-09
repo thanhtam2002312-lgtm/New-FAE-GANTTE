@@ -108,8 +108,8 @@ export const ACCENT_THEMES: AccentThemeOption[] = [
   }
 ];
 
-// Fallback high-definition dark atmospheric mountain landscape
-export const DEFAULT_FALLBACK_URL = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop";
+// Default high-definition Apple macOS Big Sur Coast Night landscape
+export const DEFAULT_FALLBACK_URL = "/wallpapers/default-night.jpg";
 
 /**
  * Client-side image compression: prevents localStorage quota overflow by resizing
@@ -158,7 +158,14 @@ function getInitialWallpapers(): StoredWallpaper[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.slice(0, 6);
+        // Upgrade any outdated unsplash placeholder to the new Big Sur Coast wallpaper
+        const upgraded = parsed.map(w => {
+          if (w.url && w.url.includes("photo-1506744038136-46273834b3fb")) {
+            return { ...w, url: DEFAULT_FALLBACK_URL, name: "Big Sur Coast (默认)" };
+          }
+          return w;
+        });
+        return upgraded.slice(0, 6);
       }
     }
   } catch (e) {
@@ -167,14 +174,14 @@ function getInitialWallpapers(): StoredWallpaper[] {
 
   // If user previously uploaded a custom wallpaper in localStorage, use it as default
   const existingCustom = localStorage.getItem("macos_custom_wallpaper");
-  const primaryUrl = existingCustom && existingCustom.trim().length > 0
+  const primaryUrl = existingCustom && existingCustom.trim().length > 0 && !existingCustom.includes("photo-1506744038136-46273834b3fb")
     ? existingCustom
     : DEFAULT_FALLBACK_URL;
 
   return [
     {
       id: "wp-default-1",
-      name: "我的壁纸 1 (默认)",
+      name: "Big Sur Coast (默认)",
       url: primaryUrl,
       isDefault: true,
       createdAt: Date.now()
