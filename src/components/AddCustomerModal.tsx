@@ -98,7 +98,7 @@ const AutocompleteInput = ({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+      <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
         {label} {required && <span className="text-[#FF3B30]">*</span>}
       </label>
       <input
@@ -111,18 +111,18 @@ const AutocompleteInput = ({
         }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+        className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70"
         placeholder={placeholder}
       />
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl border border-black/5 dark:border-white/5 rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.35)] max-h-48 overflow-y-auto py-1">
+        <div className="absolute z-50 w-full mt-1.5 bg-[#121927]/80 dark:bg-[#0D131F]/85 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] max-h-48 overflow-y-auto p-1 custom-scrollbar">
           {filteredOptions.map((opt, i) => (
             <div
               key={i}
-              className={`px-4 py-2.5 text-[14px] cursor-pointer transition-colors ${
+              className={`px-3 py-2 text-[14px] rounded-xl cursor-pointer transition-all ${
                 i === activeIndex
-                  ? 'bg-[#0071E3] text-white'
-                  : 'text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-[#0071E3] text-white shadow-sm font-semibold'
+                  : 'text-white/90 hover:text-white hover:bg-white/15'
               }`}
               onClick={() => {
                 onChange(opt);
@@ -214,15 +214,15 @@ export default function AddCustomerModal({ customers, onClose, onSave }: AddCust
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-md transition-all">
-      <div className="bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20 dark:border-white/10">
-        <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 dark:border-white/5 bg-white/50 dark:bg-[#1C1C1E]/50 w-full">
-          <h2 className="text-xl font-semibold text-[#1D1D1F] dark:text-white tracking-tight">添加客户</h2>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/25 backdrop-blur-[3px] transition-all">
+      <div className="macos-glass-modal rounded-3xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-white/[0.04] backdrop-blur-md w-full">
+          <h2 className="text-xl font-semibold text-white tracking-tight">添加客户</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-[#8E8E93]" />
+            <X className="w-5 h-5 text-white/70" />
           </button>
         </div>
 
@@ -239,11 +239,11 @@ export default function AddCustomerModal({ customers, onClose, onSave }: AddCust
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-5 border-t border-black/5 dark:border-white/5">
+          <div className="flex justify-end gap-3 pt-5 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-white hover:bg-white/10 transition-colors"
             >
               取消
             </button>

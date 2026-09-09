@@ -1,17 +1,20 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Calendar } from 'lucide-react';
-import { Customer, PNStatus } from '../types';
+import { X, Calendar, DollarSign, Layers, CheckCircle2 } from 'lucide-react';
+import { Customer, Project, PNStatus } from '../types';
 import { normalizeDateStr } from '../utils/helpers';
+import { GlassSelect } from './GlassSelect';
 
 interface AddPNModalProps {
   customers: Customer[];
+  customer?: Customer;
+  project?: Project;
   onClose: () => void;
   onSave: (data: {
     name: string;
     productLine: string;
     status: PNStatus;
     drStatus: string;
-    marketSegment: string;
+    marketSegment?: string;
     socketCreateDate: string;
     socketTotalLtrAmt: string;
     channelOk: 'Yes' | 'No';
@@ -52,7 +55,7 @@ const DateInput = ({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5 ml-1">
-        <label className="block text-[13px] font-medium text-[#8E8E93]">
+        <label className="block text-[13px] font-medium text-white/70">
           {label} {required && <span className="text-[#FF3B30]">*</span>}
         </label>
         <button
@@ -68,11 +71,11 @@ const DateInput = ({
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93] [color-scheme:light-dark]"
+          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/20 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70 [color-scheme:light-dark]"
           placeholder={placeholder}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-          <Calendar className="w-4 h-4 text-[#8E8E93]" />
+          <Calendar className="w-4 h-4 text-white/70" />
         </div>
       </div>
     </div>
@@ -153,7 +156,7 @@ const AutocompleteInput = ({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+      <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
         {label} {required && <span className="text-[#FF3B30]">*</span>}
       </label>
       <input
@@ -166,18 +169,18 @@ const AutocompleteInput = ({
         }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+        className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/20 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70"
         placeholder={placeholder}
       />
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl border border-black/5 dark:border-white/5 rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.35)] max-h-48 overflow-y-auto py-1">
+        <div className="absolute z-50 w-full mt-1.5 bg-[#121927]/80 dark:bg-[#0D131F]/85 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] max-h-48 overflow-y-auto p-1 custom-scrollbar">
           {filteredOptions.map((opt, i) => (
             <div
               key={i}
-              className={`px-4 py-2 text-[14px] cursor-pointer transition-colors ${
+              className={`px-3 py-2 text-[14px] rounded-xl cursor-pointer transition-all ${
                 i === activeIndex
-                  ? 'bg-[#0071E3] text-white'
-                  : 'text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-[#0071E3] text-white shadow-sm font-semibold'
+                  : 'text-white/90 hover:text-white hover:bg-white/15'
               }`}
               onClick={() => {
                 onChange(opt);
@@ -195,12 +198,11 @@ const AutocompleteInput = ({
   );
 };
 
-export default function AddPNModal({ customers, onClose, onSave, initialData }: AddPNModalProps) {
+export default function AddPNModal({ customers, customer, project, onClose, onSave, initialData }: AddPNModalProps) {
   const [productLine, setProductLine] = useState(initialData?.productLine || '');
   const [name, setName] = useState(initialData?.name || '');
   const [status, setStatus] = useState<PNStatus>(initialData?.status || 'NBO');
   const [drStatus, setDrStatus] = useState(initialData?.drStatus || '');
-  const [marketSegment, setMarketSegment] = useState(initialData?.marketSegment || '');
   const [socketCreateDate, setSocketCreateDate] = useState(normalizeDateStr(initialData?.socketCreateDate || ''));
   const [socketTotalLtrAmt, setSocketTotalLtrAmt] = useState(initialData?.socketTotalLtrAmt || '');
   const [channelOk, setChannelOk] = useState<'Yes' | 'No'>(initialData?.channelOk || 'Yes');
@@ -232,18 +234,6 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
     return Array.from(names).filter(Boolean);
   }, [customers]);
 
-  const existingMarketSegments = useMemo(() => {
-    const markets = new Set<string>();
-    customers.forEach((c) => {
-      c.projects.forEach((p) => {
-        p.pns.forEach((pn) => {
-          if (pn.marketSegment) markets.add(pn.marketSegment);
-        });
-      });
-    });
-    return Array.from(markets).filter(Boolean);
-  }, [customers]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -260,7 +250,7 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
       productLine: productLine.trim(),
       status,
       drStatus: drStatus.trim(),
-      marketSegment: marketSegment.trim(),
+      marketSegment: project?.marketSegment || initialData?.marketSegment || '',
       socketCreateDate: socketCreateDate.trim(),
       socketTotalLtrAmt: socketTotalLtrAmt.trim(),
       channelOk,
@@ -268,25 +258,51 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
     });
   };
 
+  const marketSegmentDisplay = project?.marketSegment || initialData?.marketSegment;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[4px]"
         onClick={onClose}
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-black/5 dark:border-white/10 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-xl macos-glass-modal rounded-3xl overflow-hidden transform transition-all flex flex-col max-h-[92vh] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5">
-          <h3 className="text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
-            {initialData ? '编辑料号 (PN) 详情' : '添加料号 (PN)'}
-          </h3>
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/10 bg-white/[0.04] backdrop-blur-md">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-[#0071E3]" />
+              <span>{initialData ? '编辑料号 (PN) 详情' : '添加料号 (PN)'}</span>
+            </h3>
+            {(customer || project) && (
+              <div className="flex items-center gap-2 flex-wrap text-xs text-white/65">
+                {customer && (
+                  <span>
+                    所属客户: <span className="text-white font-medium">{customer.nameZh || customer.nameEn}</span>
+                  </span>
+                )}
+                {customer && project && <span className="text-white/20">/</span>}
+                {project && (
+                  <span>
+                    项目: <span className="text-white font-medium">{project.name}</span>
+                  </span>
+                )}
+                {marketSegmentDisplay && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#0071E3]/20 border border-[#0071E3]/35 text-[#64B5F6] font-medium text-[11px] ml-1">
+                    市场: {marketSegmentDisplay}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -295,13 +311,14 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
           {error && (
-            <div className="p-3.5 bg-[#FF3B30]/10 text-[#FF3B30] text-xs font-medium rounded-xl border border-[#FF3B30]/10">
-              {error}
+            <div className="p-3 bg-[#FF3B30]/15 text-[#FF6961] text-xs font-medium rounded-xl border border-[#FF3B30]/25 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Row 1: Product Line and Channel OK */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Row 1: 产品线选择 & 料号 PN (Symmetric 2 columns) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <AutocompleteInput
                 label="产品线选择"
@@ -317,18 +334,6 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
             </div>
             <div>
               <AutocompleteInput
-                label="市场 (Segment)"
-                value={marketSegment}
-                onChange={setMarketSegment}
-                options={existingMarketSegments}
-                placeholder="Market Segment"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <AutocompleteInput
                 label="料号 PN"
                 value={name}
                 onChange={(val) => {
@@ -340,67 +345,62 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
                 required
               />
             </div>
-            <div>
-              <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
-                渠道是否OK
-              </label>
-              <select
-                value={channelOk}
-                onChange={(e) => setChannelOk(e.target.value as 'Yes' | 'No')}
-                className="w-full appearance-none bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-              >
-                <option value="Yes" className="bg-white dark:bg-[#1C1C1E]">Yes</option>
-                <option value="No" className="bg-white dark:bg-[#1C1C1E]">No</option>
-              </select>
-            </div>
           </div>
 
-          {/* Row 2: Part Number, PN Status, and DR Status */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="col-span-2">
-              {/* moved to row 1 above */}
-            </div>
+          {/* Row 2: 状态与渠道 (Symmetric 3 columns - No awkward gaps) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+              <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
                 料号状态
               </label>
-              <select
+              <GlassSelect
                 value={status}
-                onChange={(e) => setStatus(e.target.value as PNStatus)}
-                className="w-full appearance-none bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-              >
-                {['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST'].map((st) => (
-                  <option key={st} value={st} className="bg-white dark:bg-[#1C1C1E]">{st}</option>
-                ))}
-              </select>
+                onChange={(val) => setStatus(val as PNStatus)}
+                options={['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST']}
+                className="w-full !bg-white/10 !border-white/15 !py-2.5 !px-3.5 !rounded-xl text-[14px]"
+              />
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+              <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
                 DR 状态
               </label>
               <input
                 type="text"
                 value={drStatus}
                 onChange={(e) => setDrStatus(e.target.value)}
-                className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
-                placeholder="如 DR0, DR1"
+                className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3.5 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40"
+                placeholder="如 DR0, DR1, DR2"
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
+                渠道是否 OK
+              </label>
+              <GlassSelect
+                value={channelOk}
+                onChange={(val) => setChannelOk(val as 'Yes' | 'No')}
+                options={['Yes', 'No']}
+                className="w-full !bg-white/10 !border-white/15 !py-2.5 !px-3.5 !rounded-xl text-[14px]"
               />
             </div>
           </div>
 
-          {/* Row 3: Socket Amount and Socket Date */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Row 3: Socket 金额 & Socket 创建日期 (Symmetric 2 columns) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+              <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
                 Socket 金额
               </label>
-              <input
-                type="text"
-                value={socketTotalLtrAmt}
-                onChange={(e) => setSocketTotalLtrAmt(e.target.value)}
-                className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
-                placeholder="金额如 $10,000"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={socketTotalLtrAmt}
+                  onChange={(e) => setSocketTotalLtrAmt(e.target.value)}
+                  className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-9 pr-4 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40"
+                  placeholder="金额如 $10,000 或 500K"
+                />
+                <DollarSign className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             <DateInput
@@ -410,31 +410,31 @@ export default function AddPNModal({ customers, onClose, onSave, initialData }: 
             />
           </div>
 
-          {/* Row 4: Remark text area */}
+          {/* Row 4: Remark 备注 (Full width) */}
           <div>
-            <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+            <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
               Remark (选填)
             </label>
             <textarea
               value={remark}
               onChange={(e) => setRemark(e.target.value)}
-              className="w-full h-24 bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/20 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93] resize-none"
-              placeholder="填写备注，备注将保存但在左侧列表隐藏..."
+              className="w-full h-24 bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40 resize-none leading-relaxed"
+              placeholder="填写料号备注，该备注将保存并在详情中查阅..."
             />
           </div>
 
           {/* Footer Controls */}
-          <div className="flex items-center gap-3 pt-3">
+          <div className="flex items-center gap-3 pt-3 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 text-[15px] font-semibold text-[#1D1D1F] dark:text-white bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.08] dark:hover:bg-white/10 active:scale-[0.98] rounded-xl transition-all select-none"
+              className="flex-1 py-3 text-[15px] font-semibold text-white/80 bg-white/10 hover:bg-white/20 active:scale-[0.98] rounded-xl transition-all select-none cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 text-[15px] font-semibold text-white bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] rounded-xl shadow-md cursor-pointer transition-all select-none text-center"
+              className="flex-1 py-3 text-[15px] font-semibold text-white bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] rounded-xl shadow-lg shadow-blue-500/20 cursor-pointer transition-all select-none text-center"
             >
               {initialData ? '保存修改' : '保存料号'}
             </button>

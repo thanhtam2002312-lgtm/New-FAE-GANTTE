@@ -6,7 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  const isDesktop = process.env.ELECTRON_BUILD === 'true' || process.env.TAURI_BUILD === 'true';
   return {
+    base: isDesktop ? './' : '/',
     plugins: [
       react(), 
       tailwindcss(), 

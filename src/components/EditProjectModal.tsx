@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, ChevronDown, Calendar, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, ChevronDown, Calendar, Plus, Trash2, CheckCircle2, FolderKanban, UserCheck, User, Briefcase, Phone, Mail, DollarSign, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Customer, Project, PN, PNStatus } from '../types';
-import { normalizeDateStr } from '../utils/helpers';
+import { normalizeDateStr, calculatePnTotalLtr } from '../utils/helpers';
+import { GlassSelect } from './GlassSelect';
 
 interface EditProjectModalProps {
   customers: Customer[];
@@ -23,7 +24,15 @@ interface EditProjectModalProps {
       socketTotalLtrAmt: string;
       channelOk?: 'Yes' | 'No';
       remark?: string;
-    }>
+    }>,
+    extraFields?: {
+      marketSegment?: string;
+      ltrAmt?: string;
+      ownerName?: string;
+      ownerTitle?: string;
+      ownerPhone?: string;
+      ownerEmail?: string;
+    }
   ) => void;
 }
 
@@ -104,7 +113,7 @@ const AutocompleteInput = ({
   return (
     <div className="relative" ref={wrapperRef}>
       {!hideLabel && (
-        <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+        <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
           {label} {required && <span className="text-[#FF3B30]">*</span>}
         </label>
       )}
@@ -118,18 +127,18 @@ const AutocompleteInput = ({
         }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[14px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+        className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[14px] text-white outline-none transition-all placeholder:text-white/70"
         placeholder={placeholder}
       />
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-black/5 dark:border-white/5 rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.35)] max-h-48 overflow-y-auto py-1">
+        <div className="absolute z-50 w-full mt-1.5 bg-[#121927]/80 dark:bg-[#0D131F]/85 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] max-h-48 overflow-y-auto p-1 custom-scrollbar">
           {filteredOptions.map((opt, i) => (
             <div
               key={i}
-              className={`px-3 py-1.5 text-[13px] cursor-pointer transition-colors ${
+              className={`px-3 py-1.5 text-[13px] rounded-xl cursor-pointer transition-all ${
                 i === activeIndex
-                  ? 'bg-[#0071E3] text-white'
-                  : 'text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-[#0071E3] text-white shadow-sm font-semibold'
+                  : 'text-white/90 hover:text-white hover:bg-white/15'
               }`}
               onClick={() => {
                 onChange(opt);
@@ -169,7 +178,7 @@ const DateInput = ({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5 ml-1">
-        <label className="block text-[13px] font-medium text-[#8E8E93]">
+        <label className="block text-[13px] font-medium text-white/70">
           {label} {required && <span className="text-[#FF3B30]">*</span>}
         </label>
         <button
@@ -185,11 +194,11 @@ const DateInput = ({
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93] [color-scheme:light-dark]"
+          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70 [color-scheme:light-dark]"
           placeholder={placeholder}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-          <Calendar className="w-4 h-4 text-[#8E8E93]" />
+          <Calendar className="w-4 h-4 text-white/70" />
         </div>
       </div>
     </div>
@@ -209,7 +218,7 @@ const CompactDateInput = ({
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[14px] text-[#1D1D1F] dark:text-white outline-none transition-all [color-scheme:light-dark]"
+        className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[14px] text-white outline-none transition-all [color-scheme:light-dark]"
       />
     </div>
   );
@@ -224,6 +233,12 @@ export default function EditProjectModal({
 }: EditProjectModalProps) {
   const [projectName, setProjectName] = useState(project.name);
   const [mpSchedule, setMpSchedule] = useState(normalizeDateStr(project.mpSchedule || ''));
+  const [marketSegment, setMarketSegment] = useState(project.marketSegment || '');
+  const [ltrAmt, setLtrAmt] = useState(project.ltrAmt || '');
+  const [ownerName, setOwnerName] = useState(project.ownerName || '');
+  const [ownerTitle, setOwnerTitle] = useState(project.ownerTitle || '');
+  const [ownerPhone, setOwnerPhone] = useState(project.ownerPhone || '');
+  const [ownerEmail, setOwnerEmail] = useState(project.ownerEmail || '');
   const [showToast, setShowToast] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -254,8 +269,13 @@ export default function EditProjectModal({
     if (project) {
       setProjectName(project.name || '');
       setMpSchedule(normalizeDateStr(project.mpSchedule || ''));
+      setMarketSegment(project.marketSegment || '');
+      setOwnerName(project.ownerName || '');
+      setOwnerTitle(project.ownerTitle || '');
+      setOwnerPhone(project.ownerPhone || '');
+      setOwnerEmail(project.ownerEmail || '');
       if (project.pns) {
-        setLocalPns(project.pns.map(pn => ({
+        const mappedPns = project.pns.map(pn => ({
           id: pn.id,
           name: pn.name || '',
           productLine: pn.productLine || '',
@@ -265,12 +285,28 @@ export default function EditProjectModal({
           socketTotalLtrAmt: pn.socketTotalLtrAmt || '',
           channelOk: pn.channelOk || 'Yes',
           remark: pn.remark || '',
-        })));
+        }));
+        setLocalPns(mappedPns);
+        const computedInit = calculatePnTotalLtr(mappedPns);
+        setLtrAmt(computedInit || project.ltrAmt || '');
       } else {
         setLocalPns([]);
+        setLtrAmt(project.ltrAmt || '');
       }
     }
   }, [project]);
+
+  // Computed sum of PN SOCKET amounts in real-time
+  const computedTotalLtr = useMemo(() => {
+    return calculatePnTotalLtr(localPns);
+  }, [localPns]);
+
+  // Keep ltrAmt synced whenever localPns change
+  useEffect(() => {
+    if (computedTotalLtr) {
+      setLtrAmt(computedTotalLtr);
+    }
+  }, [computedTotalLtr]);
 
   // Extract autocomplete options
   const productLineOptions = useMemo(() => {
@@ -339,12 +375,20 @@ export default function EditProjectModal({
       }
     }
 
-    onSave(project.id, projectName.trim(), mpSchedule, localPns);
+    const finalLtr = (computedTotalLtr || ltrAmt).trim();
+    onSave(project.id, projectName.trim(), mpSchedule, localPns, {
+      marketSegment: marketSegment.trim(),
+      ltrAmt: finalLtr,
+      ownerName: ownerName.trim(),
+      ownerTitle: ownerTitle.trim(),
+      ownerPhone: ownerPhone.trim(),
+      ownerEmail: ownerEmail.trim(),
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-md transition-all">
-      <div className="bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] w-full max-w-[95vw] lg:max-w-[85vw] xl:max-w-6xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20 dark:border-white/10 relative">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/25 backdrop-blur-[3px] transition-all">
+      <div className="macos-glass-modal rounded-3xl w-full max-w-[95vw] lg:max-w-[85vw] xl:max-w-6xl overflow-hidden flex flex-col max-h-[90vh] relative">
         
         {/* Toast feedback */}
         <AnimatePresence>
@@ -362,16 +406,16 @@ export default function EditProjectModal({
         </AnimatePresence>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 dark:border-white/5 bg-white/50 dark:bg-[#1C1C1E]/50 w-full shrink-0">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-white/[0.04] backdrop-blur-md w-full shrink-0">
           <div>
-            <h2 className="text-xl font-semibold text-[#1D1D1F] dark:text-white tracking-tight">编辑项目及料号详情</h2>
-            <p className="text-xs text-[#8E8E93] mt-0.5">客户: {customer.nameZh} {customer.nameEn ? `(${customer.nameEn})` : ''}</p>
+            <h2 className="text-xl font-semibold text-white tracking-tight">编辑项目及料号详情</h2>
+            <p className="text-xs text-white/70 mt-0.5">客户: {customer.nameZh} {customer.nameEn ? `(${customer.nameEn})` : ''}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-[#8E8E93]" />
+            <X className="w-5 h-5 text-white/70" />
           </button>
         </div>
 
@@ -379,20 +423,37 @@ export default function EditProjectModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
           
           {/* Section 1: Project Information */}
-          <div className="bg-black/[0.01] dark:bg-white/[0.01] border border-black/5 dark:border-white/5 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-[#1D1D1F] dark:text-white border-b border-black/5 dark:border-white/5 pb-2">项目基本信息</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+          <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-white/10 text-sm font-semibold text-white">
+              <FolderKanban className="w-4 h-4 text-[#0071E3]" />
+              <span>项目基本与团队信息</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
                   项目名称 <span className="text-[#FF3B30]">*</span>
                 </label>
                 <input
                   type="text"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+                  className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70"
                   placeholder="项目名称为必填"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
+                  市场 (Segment)
+                </label>
+                <input
+                  type="text"
+                  value={marketSegment}
+                  onChange={(e) => setMarketSegment(e.target.value)}
+                  className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/40"
+                  placeholder="例如：Auto / 工业控制"
                 />
               </div>
 
@@ -401,19 +462,108 @@ export default function EditProjectModal({
                 value={mpSchedule}
                 onChange={setMpSchedule}
               />
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5 ml-1">
+                  <label className="block text-[13px] font-medium text-white/70">
+                    LTR (总金额)
+                  </label>
+                  {localPns.length > 0 && (
+                    <span 
+                      className="text-[11px] text-[#34C759] bg-[#34C759]/15 border border-[#34C759]/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium select-none"
+                      title="根据下方该项目所有料号的 SOCKET 金额自动汇总"
+                    >
+                      <Calculator className="w-3 h-3" />
+                      自动汇总下方料号
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={computedTotalLtr || ltrAmt}
+                    onChange={(e) => setLtrAmt(e.target.value)}
+                    className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-9 pr-4 py-2.5 text-[15px] outline-none transition-all placeholder:text-white/40 font-semibold text-[#64B5F6]"
+                    placeholder="例如：$10,000"
+                  />
+                  <DollarSign className="w-4 h-4 text-[#64B5F6]/70 absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">负责人名字</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-9 pr-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/40"
+                    placeholder="姓名"
+                  />
+                  <User className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">职位</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={ownerTitle}
+                    onChange={(e) => setOwnerTitle(e.target.value)}
+                    className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-9 pr-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/40"
+                    placeholder="职位"
+                  />
+                  <Briefcase className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">电话 / 邮箱</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="tel"
+                      value={ownerPhone}
+                      onChange={(e) => setOwnerPhone(e.target.value)}
+                      className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-8 pr-2 py-2.5 text-[13px] text-white outline-none transition-all placeholder:text-white/40"
+                      placeholder="电话"
+                    />
+                    <Phone className="w-3.5 h-3.5 text-white/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <div className="relative flex-1">
+                    <input
+                      type="email"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-8 pr-2 py-2.5 text-[13px] text-white outline-none transition-all placeholder:text-white/40"
+                      placeholder="邮箱"
+                    />
+                    <Mail className="w-3.5 h-3.5 text-white/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Section 2: PNs detail in cohesive list table */}
           <div className="space-y-4 overflow-visible">
-            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-2">
-              <h3 className="text-sm font-semibold text-[#1D1D1F] dark:text-white">
-                该项目下的料号 (PN) 信息列表
-              </h3>
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-semibold text-white">
+                  该项目下的料号 (PN) 信息列表
+                </h3>
+                {localPns.length > 0 && (
+                  <span className="text-xs text-[#64B5F6] bg-[#0071E3]/20 border border-[#0071E3]/35 px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1.5 select-none">
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>SOCKET 合计: <strong className="font-bold text-white">{computedTotalLtr || '$0'}</strong></span>
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={handleAddPn}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-lg transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>增添新料号</span>
@@ -421,19 +571,19 @@ export default function EditProjectModal({
             </div>
 
             {localPns.length === 0 ? (
-              <div className="text-center py-8 bg-black/[0.01] dark:bg-white/[0.01] rounded-2xl border border-dashed border-black/10 dark:border-white/10 text-sm text-[#8E8E93]">
+              <div className="text-center py-8 bg-white/[0.03] rounded-2xl border border-dashed border-white/15 text-sm text-white/70">
                 当前项目暂无料号 PN，请点击右上角并“增添新料号”新增一行
               </div>
             ) : (
-              <div className="border border-black/5 dark:border-white/5 rounded-2xl overflow-visible bg-black/[0.01] dark:bg-white/[0.01]">
+              <div className="border border-white/10 rounded-2xl overflow-visible bg-white/[0.03]">
                 {/* Header Row */}
-                <div className="grid grid-cols-[130px_95px_160px_110px_100px_120px_140px_1fr_45px] gap-2.5 px-4 py-3 border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider select-none">
+                <div className="grid grid-cols-[130px_95px_160px_110px_100px_120px_140px_1fr_45px] gap-2.5 px-4 py-3 border-b border-white/10 bg-white/[0.05] text-[12px] font-semibold text-white/70 uppercase tracking-wider select-none">
                   <div>产品线</div>
                   <div>渠道 OK</div>
                   <div>料号 PN <span className="text-[#FF3B30]">*</span></div>
                   <div>PN 状态</div>
                   <div>DR 状态</div>
-                  <div>Socket 金额</div>
+                  <div className="text-white">SOCKET 金额</div>
                   <div>Socket 创建日期</div>
                   <div>备注 / Remark</div>
                   <div className="text-center">操作</div>
@@ -459,17 +609,13 @@ export default function EditProjectModal({
 
                       {/* 2. Channel OK dropdown */}
                       <div>
-                        <div className="relative">
-                          <select
-                            value={pn.channelOk || 'Yes'}
-                            onChange={(e) => handleUpdatePnField(index, 'channelOk', e.target.value)}
-                            className="w-full appearance-none bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-3 pr-8 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-                          >
-                            <option value="Yes" className="bg-white dark:bg-[#1C1C1E]">Yes</option>
-                            <option value="No" className="bg-white dark:bg-[#1C1C1E]">No</option>
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8E8E93] pointer-events-none" />
-                        </div>
+                        <GlassSelect
+                          value={pn.channelOk || 'Yes'}
+                          onChange={(val) => handleUpdatePnField(index, 'channelOk', val)}
+                          options={['Yes', 'No']}
+                          size="xs"
+                          className="w-full !bg-white/10 !border-white/15 !py-2 !px-3 !rounded-xl text-[13px]"
+                        />
                       </div>
 
                       {/* 3. Part Number Autocomplete */}
@@ -487,18 +633,13 @@ export default function EditProjectModal({
 
                       {/* 4. PN Status dropdown */}
                       <div>
-                        <div className="relative">
-                          <select
-                            value={pn.status}
-                            onChange={(e) => handleUpdatePnField(index, 'status', e.target.value as PNStatus)}
-                            className="w-full appearance-none bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-3 pr-8 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-                          >
-                            {['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST'].map(status => (
-                              <option key={status} value={status} className="bg-white dark:bg-[#1C1C1E]">{status}</option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8E8E93] pointer-events-none" />
-                        </div>
+                        <GlassSelect
+                          value={pn.status}
+                          onChange={(val) => handleUpdatePnField(index, 'status', val as PNStatus)}
+                          options={['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST']}
+                          size="xs"
+                          className="w-full !bg-white/10 !border-white/15 !py-2 !px-3 !rounded-xl text-[13px]"
+                        />
                       </div>
 
                       {/* 5. DR Status */}
@@ -507,7 +648,7 @@ export default function EditProjectModal({
                           type="text"
                           value={pn.drStatus}
                           onChange={(e) => handleUpdatePnField(index, 'drStatus', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-white outline-none transition-all placeholder:text-white/70"
                           placeholder="DR状态"
                         />
                       </div>
@@ -518,8 +659,8 @@ export default function EditProjectModal({
                           type="text"
                           value={pn.socketTotalLtrAmt}
                           onChange={(e) => handleUpdatePnField(index, 'socketTotalLtrAmt', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
-                          placeholder="金額,如$10K"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-white outline-none transition-all placeholder:text-white/70 font-mono"
+                          placeholder="如 2720 或 $10K"
                         />
                       </div>
 
@@ -537,7 +678,7 @@ export default function EditProjectModal({
                           type="text"
                           value={pn.remark}
                           onChange={(e) => handleUpdatePnField(index, 'remark', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-white outline-none transition-all placeholder:text-white/70"
                           placeholder="输入备注..."
                         />
                       </div>
@@ -547,7 +688,7 @@ export default function EditProjectModal({
                         <button
                           type="button"
                           onClick={() => handleRemovePn(index)}
-                          className="p-2 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-xl transition-all"
+                          className="p-2 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-xl transition-all"
                           title="删除此料号"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -562,11 +703,11 @@ export default function EditProjectModal({
           </div>
 
           {/* Footer controls */}
-          <div className="flex justify-end gap-3 pt-5 border-t border-black/5 dark:border-white/5">
+          <div className="flex justify-end gap-3 pt-5 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-white hover:bg-white/10 transition-colors"
             >
               取消
             </button>

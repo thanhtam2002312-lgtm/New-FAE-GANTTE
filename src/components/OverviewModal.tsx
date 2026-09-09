@@ -4,6 +4,7 @@ import { X, Users, FolderKanban, Cpu, CheckCircle2, TrendingUp, BarChart3, Activ
 import { Customer, PN, Project, Task } from '../types';
 import { cn } from '../utils/cn';
 import { getBadgeColor } from '../utils/colors';
+import { GlassSelect } from './GlassSelect';
 
 interface OverviewModalProps {
   isOpen: boolean;
@@ -169,45 +170,45 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/30 backdrop-blur-[3px]"
           onClick={onClose}
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-5xl max-h-[90vh] bg-[#F5F5F7] dark:bg-[#1C1C1E] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-5xl max-h-[90vh] macos-glass-modal rounded-3xl shadow-2xl overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-8 py-6 bg-white/50 dark:bg-black/20 backdrop-blur-md border-b border-black/5 dark:border-white/5 sticky top-0 z-10">
+          <div className="flex items-center justify-between px-8 py-5 bg-white/[0.05] backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
             <div className="flex items-center gap-4">
               {detailView && (
                 <button
                   onClick={() => setDetailView(null)}
-                  className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+                  className="p-2 -ml-2 hover:bg-white/15 rounded-full transition-colors flex items-center justify-center"
                   title="返回概览"
                 >
-                  <ArrowLeft className="w-6 h-6 text-[#1D1D1F] dark:text-white" />
+                  <ArrowLeft className="w-6 h-6 text-white" />
                 </button>
               )}
               <div>
-                <h2 className="text-2xl font-bold text-[#1D1D1F] dark:text-white tracking-tight">
+                <h2 className="text-2xl font-bold text-white tracking-tight">
                   {detailView === 'customers' ? '所有客户列表' :
                    detailView === 'projects' ? '所有项目列表' :
                    detailView === 'pns' ? '所有料号列表' :
                    detailView === 'tasks' ? '所有任务列表' :
                    '项目概览'}
                 </h2>
-                <p className="text-sm text-[#8E8E93] mt-1">
+                <p className="text-xs text-white/70 mt-0.5">
                   {detailView ? '详细数据列表' : '全局数据统计与分析'}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 hover:bg-white/15 rounded-full transition-colors"
             >
-              <X className="w-6 h-6 text-[#8E8E93]" />
+              <X className="w-6 h-6 text-white/70" />
             </button>
           </div>
 
@@ -220,33 +221,33 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5 flex flex-col h-full"
+                  className="bg-white/[0.05] border border-white/12 backdrop-blur-md rounded-2xl p-6 flex flex-col h-full shadow-sm"
                 >
                   <div className="mb-4 flex items-center justify-between shrink-0">
-                    <select
+                    <GlassSelect
                       value={detailFilter || ""}
-                      onChange={(e) => setDetailFilter(e.target.value || null)}
-                      className="px-3 py-1.5 bg-[#F2F2F7] dark:bg-[#3A3A3C] border-none rounded-lg text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA] focus:ring-2 focus:ring-[#007AFF] outline-none cursor-pointer"
-                    >
-                      <option value="">
-                        全部 {detailView === 'customers' ? 'Sales' : detailView === 'projects' ? '客户' : detailView === 'pns' ? '产品线' : 'Owner'}
-                      </option>
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                    <div className="text-sm font-medium text-[#8E8E93]">
+                      onChange={(val) => setDetailFilter(val || null)}
+                      options={[
+                        {
+                          value: "",
+                          label: `全部 ${detailView === 'customers' ? 'Sales' : detailView === 'projects' ? '客户' : detailView === 'pns' ? '产品线' : 'Owner'}`
+                        },
+                        ...categories.map(cat => ({ value: cat, label: cat }))
+                      ]}
+                      size="sm"
+                    />
+                    <div className="text-sm font-medium text-white/70">
                       共 {filteredList.length} 项
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto no-scrollbar">
                     <div className="grid grid-cols-1 gap-3">
                       {filteredList.map((item, idx) => (
-                        <div key={idx} className="flex items-center p-4 rounded-xl bg-[#F2F2F7] dark:bg-[#3A3A3C] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                          <div className="text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA] truncate w-[15%] shrink-0" title={item.category}>
+                        <div key={idx} className="flex items-center p-4 rounded-xl macos-glass-pill hover:bg-white/10 transition-colors">
+                          <div className="text-sm font-medium text-white truncate w-[15%] shrink-0" title={item.category}>
                             {item.category}
                           </div>
-                          <div className="text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA] truncate w-[25%] shrink-0 ml-4" title={item.name}>
+                          <div className="text-sm font-medium text-white truncate w-[25%] shrink-0 ml-4" title={item.name}>
                             {item.name}
                           </div>
                           <div className="flex-1 ml-4 flex flex-wrap gap-2 justify-end items-center">
@@ -267,7 +268,7 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                       ))}
                     </div>
                     {filteredList.length === 0 && (
-                      <div className="text-center py-12 text-[#8E8E93]">暂无数据</div>
+                      <div className="text-center py-12 text-white/70">暂无数据</div>
                     )}
                   </div>
                 </motion.div>
@@ -288,21 +289,21 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Product Line Distribution */}
-              <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+              <div className="bg-white/[0.05] border border-white/12 backdrop-blur-md rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
-                  <BarChart3 className="w-5 h-5 text-[#007AFF]" />
-                  <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-white">产品线分布</h3>
+                  <BarChart3 className="w-5 h-5 text-[#38BDF8]" />
+                  <h3 className="text-lg font-semibold text-white">产品线分布</h3>
                 </div>
                 <div className="space-y-4">
                   {stats.sortedPl.map(([pl, count], idx) => (
                     <div 
                       key={pl} 
-                      className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity p-2 -mx-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                      className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity p-2 -mx-2 rounded-lg hover:bg-white/10"
                       onClick={() => onFilterProductLine?.(pl)}
                       title={`点击筛选产品线为 ${pl} 的项目`}
                     >
-                      <div className="w-20 text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA] truncate" title={pl}>{pl}</div>
-                      <div className="flex-1 h-3 bg-[#F2F2F7] dark:bg-[#3A3A3C] rounded-full overflow-hidden">
+                      <div className="w-20 text-sm font-medium text-white truncate" title={pl}>{pl}</div>
+                      <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${(count / stats.totalPNs) * 100}%` }}
@@ -310,31 +311,31 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                           className="h-full bg-[#007AFF] rounded-full"
                         />
                       </div>
-                      <div className="w-8 text-right text-sm font-bold text-[#8E8E93]">{count}</div>
+                      <div className="w-8 text-right text-sm font-bold text-white/70">{count}</div>
                     </div>
                   ))}
                   {stats.sortedPl.length === 0 && (
-                    <div className="text-sm text-[#8E8E93] text-center py-4">暂无数据</div>
+                    <div className="text-sm text-white/70 text-center py-4">暂无数据</div>
                   )}
                 </div>
               </div>
 
               {/* Sales Distribution */}
-              <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+              <div className="bg-white/[0.05] border border-white/12 backdrop-blur-md rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
-                  <UserCircle className="w-5 h-5 text-[#AF52DE]" />
-                  <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-white">Sales 分布</h3>
+                  <UserCircle className="w-5 h-5 text-[#C084FC]" />
+                  <h3 className="text-lg font-semibold text-white">Sales 分布</h3>
                 </div>
                 <div className="space-y-4">
                   {stats.sortedSales.map(([sales, count], idx) => (
                     <div 
                       key={sales} 
-                      className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity p-2 -mx-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                      className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity p-2 -mx-2 rounded-lg hover:bg-white/10"
                       onClick={() => onFilterSales?.(sales)}
                       title={`点击筛选 Sales 为 ${sales} 的项目`}
                     >
-                      <div className="w-20 text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA] truncate" title={sales}>{sales}</div>
-                      <div className="flex-1 h-3 bg-[#F2F2F7] dark:bg-[#3A3A3C] rounded-full overflow-hidden">
+                      <div className="w-20 text-sm font-medium text-white truncate" title={sales}>{sales}</div>
+                      <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${(count / stats.totalPNs) * 100}%` }}
@@ -342,20 +343,20 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                           className="h-full bg-[#AF52DE] rounded-full"
                         />
                       </div>
-                      <div className="w-8 text-right text-sm font-bold text-[#8E8E93]">{count}</div>
+                      <div className="w-8 text-right text-sm font-bold text-white/70">{count}</div>
                     </div>
                   ))}
                   {stats.sortedSales.length === 0 && (
-                    <div className="text-sm text-[#8E8E93] text-center py-4">暂无数据</div>
+                    <div className="text-sm text-white/70 text-center py-4">暂无数据</div>
                   )}
                 </div>
               </div>
 
               {/* Status Distribution */}
-              <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+              <div className="bg-white/[0.05] border border-white/12 backdrop-blur-md rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp className="w-5 h-5 text-[#FF9500]" />
-                  <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-white">状态分布 (Status)</h3>
+                  <TrendingUp className="w-5 h-5 text-[#FBBF24]" />
+                  <h3 className="text-lg font-semibold text-white">状态分布 (Status)</h3>
                 </div>
                 <div className="space-y-4">
                   {stats.sortedStatus.map(([status, count], idx) => {
@@ -366,27 +367,27 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                     return (
                       <div 
                         key={status} 
-                        className="flex items-center justify-between p-3 rounded-xl bg-[#F2F2F7] dark:bg-[#3A3A3C] cursor-pointer hover:opacity-80 transition-opacity"
+                        className="flex items-center justify-between p-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.14] border border-white/15 backdrop-blur-xs cursor-pointer transition-all active:scale-[0.99]"
                         onClick={() => onFilterStatus?.(status)}
                         title={`点击筛选状态为 ${status} 的项目`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn("w-3 h-3 rounded-full", colorClass)} />
-                          <span className="text-sm font-medium text-[#1D1D1F] dark:text-[#E5E5EA]">{status}</span>
+                          <span className="text-sm font-medium text-white">{status}</span>
                         </div>
-                        <span className="text-sm font-bold text-[#1D1D1F] dark:text-white">{count}</span>
+                        <span className="text-sm font-bold text-white">{count}</span>
                       </div>
                     );
                   })}
                   {stats.sortedStatus.length === 0 && (
-                    <div className="text-sm text-[#8E8E93] text-center py-4">暂无数据</div>
+                    <div className="text-sm text-white/70 text-center py-4">暂无数据</div>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5">
+            <div className="bg-white/[0.05] border border-white/12 backdrop-blur-md rounded-2xl p-6 shadow-sm">
               <div 
                 className="flex items-center gap-2 mb-6 cursor-pointer hover:opacity-80 transition-opacity select-none"
                 onClick={() => {
@@ -395,71 +396,71 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                 title="点击切换视图"
               >
                 <Activity className="w-5 h-5 text-[#FF2D55]" />
-                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-white">
+                <h3 className="text-lg font-semibold text-white">
                   最近更新的{recentView === 'projects' ? '项目' : recentView === 'pns' ? '料号' : '任务'}
                 </h3>
-                <div className="ml-2 px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] font-medium text-[#8E8E93]">
+                <div className="ml-2 px-2.5 py-0.5 rounded-full bg-white/[0.08] border border-white/15 text-[10px] font-medium text-white/80">
                   点击切换
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-black/5 dark:border-white/5">
-                      <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">客户</th>
-                      <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">项目</th>
+                    <tr className="border-b border-white/10">
+                      <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider">客户</th>
+                      <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider">项目</th>
                       {recentView !== 'projects' && (
-                        <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">料号 (PN)</th>
+                        <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider">料号 (PN)</th>
                       )}
                       {recentView === 'tasks' && (
-                        <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">任务</th>
+                        <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider">任务</th>
                       )}
-                      <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">状态</th>
-                      <th className="pb-3 text-xs font-semibold text-[#8E8E93] uppercase tracking-wider text-right">更新时间</th>
+                      <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider">状态</th>
+                      <th className="pb-3 text-xs font-semibold text-white/70 uppercase tracking-wider text-right">更新时间</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-black/5 dark:divide-white/5">
+                  <tbody className="divide-y divide-white/10">
                     {recentView === 'projects' && stats.recentProjects.map(p => (
-                      <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-[#E5E5EA] font-medium">{p.customerName}</td>
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-white font-mono">{p.name}</td>
+                      <tr key={p.id} className="hover:bg-white/[0.05] transition-colors">
+                        <td className="py-3 text-sm text-white font-medium">{p.customerName}</td>
+                        <td className="py-3 text-sm text-white font-mono">{p.name}</td>
                         <td className="py-3">
-                          <span className="text-[10px] px-2 py-1 rounded-full font-bold bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-white">
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-white/[0.08] border border-white/15 text-white">
                             -
                           </span>
                         </td>
-                        <td className="py-3 text-sm text-[#8E8E93] text-right">
+                        <td className="py-3 text-sm text-white/70 text-right">
                           {new Date(p.updatedAt).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}
                     {recentView === 'pns' && stats.recentPns.map(pn => (
-                      <tr key={pn.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-[#E5E5EA] font-medium">{pn.customerName}</td>
-                        <td className="py-3 text-sm text-[#8E8E93]">{pn.projectName}</td>
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-white font-mono">{pn.name}</td>
+                      <tr key={pn.id} className="hover:bg-white/[0.05] transition-colors">
+                        <td className="py-3 text-sm text-white font-medium">{pn.customerName}</td>
+                        <td className="py-3 text-sm text-white/70">{pn.projectName}</td>
+                        <td className="py-3 text-sm text-white font-mono">{pn.name}</td>
                         <td className="py-3">
-                          <span className="text-[10px] px-2 py-1 rounded-full font-bold bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-white">
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-white/[0.08] border border-white/15 text-white">
                             {pn.status || 'NBO'}
                           </span>
                         </td>
-                        <td className="py-3 text-sm text-[#8E8E93] text-right">
+                        <td className="py-3 text-sm text-white/70 text-right">
                           {new Date(pn.updatedAt).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}
                     {recentView === 'tasks' && stats.recentTasks.map(t => (
                       <tr key={t.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-[#E5E5EA] font-medium">{t.customerName}</td>
-                        <td className="py-3 text-sm text-[#8E8E93]">{t.projectName}</td>
-                        <td className="py-3 text-sm text-[#8E8E93] font-mono">{t.pnName}</td>
-                        <td className="py-3 text-sm text-[#1D1D1F] dark:text-white">{t.name}</td>
+                        <td className="py-3 text-sm text-white font-medium">{t.customerName}</td>
+                        <td className="py-3 text-sm text-white/70">{t.projectName}</td>
+                        <td className="py-3 text-sm text-white/70 font-mono">{t.pnName}</td>
+                        <td className="py-3 text-sm text-white">{t.name}</td>
                         <td className="py-3">
-                          <span className="text-[10px] px-2 py-1 rounded-full font-bold bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-white">
+                          <span className="text-[10px] px-2 py-1 rounded-full font-bold macos-glass-pill text-white">
                             {t.status || '未开始'}
                           </span>
                         </td>
-                        <td className="py-3 text-sm text-[#8E8E93] text-right">
+                        <td className="py-3 text-sm text-white/70 text-right">
                           {new Date(t.updatedAt).toLocaleDateString()}
                         </td>
                       </tr>
@@ -468,7 +469,7 @@ export function OverviewModal({ isOpen, onClose, customers, onFilterStatus, onFi
                       (recentView === 'pns' && stats.recentPns.length === 0) ||
                       (recentView === 'tasks' && stats.recentTasks.length === 0)) && (
                       <tr>
-                        <td colSpan={recentView === 'projects' ? 4 : recentView === 'pns' ? 5 : 6} className="py-8 text-center text-sm text-[#8E8E93]">暂无动态</td>
+                        <td colSpan={recentView === 'projects' ? 4 : recentView === 'pns' ? 5 : 6} className="py-8 text-center text-sm text-white/70">暂无动态</td>
                       </tr>
                     )}
                   </tbody>
@@ -489,17 +490,17 @@ function MetricCard({ icon, label, value, color, onClick }: { icon: React.ReactN
   return (
     <div 
       className={cn(
-        "bg-white dark:bg-[#2C2C2E] rounded-2xl p-6 shadow-sm border border-black/5 dark:border-white/5 flex items-center gap-4",
-        onClick && "cursor-pointer hover:scale-105 hover:shadow-md transition-all active:scale-95"
+        "bg-white/[0.06] hover:bg-white/[0.12] border border-white/12 backdrop-blur-md rounded-2xl p-6 flex items-center gap-4 transition-all duration-200 shadow-sm",
+        onClick && "cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
       )}
       onClick={onClick}
     >
-      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-inner", color)}>
+      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md", color)}>
         {React.cloneElement(icon as React.ReactElement, { className: "w-6 h-6" })}
       </div>
       <div>
-        <div className="text-sm font-medium text-[#8E8E93] mb-1">{label}</div>
-        <div className="text-3xl font-bold text-[#1D1D1F] dark:text-white tracking-tight">{value}</div>
+        <div className="text-xs font-semibold text-white/70 mb-1 tracking-wider uppercase">{label}</div>
+        <div className="text-3xl font-bold text-white tracking-tight">{value}</div>
       </div>
     </div>
   );

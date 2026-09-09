@@ -23,6 +23,8 @@ import {
   X,
   Table,
   LayoutList,
+  Palette,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -40,8 +42,9 @@ import {
   getCurrentDateStr,
   getWeekNumber,
   getDaysBetween,
+  calculatePnTotalLtr,
 } from "./utils/helpers";
-import { excelService } from "./services/excelService";
+import { excelService, isDummyValue, extractProductLineFromRow } from "./services/excelService";
 import TaskModal from "./components/TaskModal";
 import AddProjectModal from "./components/AddProjectModal";
 import AddCustomerModal from "./components/AddCustomerModal";
@@ -51,6 +54,8 @@ import EditPNModal from "./components/EditPNModal";
 import AddPNModal from "./components/AddPNModal";
 import { OverviewModal } from "./components/OverviewModal";
 import { ExcelView } from "./components/ExcelView";
+import { MacDesktopLayer } from "./components/MacDesktopLayer";
+import { GlassSelect } from "./components/GlassSelect";
 import { getBadgeColor } from "./utils/colors";
 import { get, set, del } from "idb-keyval";
 
@@ -67,6 +72,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,6 +176,12 @@ export default function App() {
   };
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [statusPicker, setStatusPicker] = useState<{
+    pnId: string;
+    top: number;
+    left: number;
+    currentStatus: string;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -214,18 +226,106 @@ export default function App() {
     localStorage.setItem("fae_sidebar_width", sidebarWidth.toString());
   }, [sidebarWidth]);
 
+  // 辅助函数：
+  // 1. 自动修复与纠正历史存量中错误读取为 "NA" 的产品线（从 rawData 中智能提取真实的 Brand (Product line)）；
+  // 2. 清理可能误混入甘特图任务中的 Call Report / 历史跟进记录，确保其仅存在于 Updated 列中
+  const sanitizeLoadedCustomers = (data: Customer[]): Customer[] => {
+    return data.map((c) => ({
+      ...c,
+      projects: c.projects.map((p) => {
+        const updatedPns = p.pns.map((pn) => {
+          // 修复产品线：若历史数据中为 NA、N/A 等无效值，从 rawData 中重新提取或清空
+          let correctedPl = pn.productLine || "";
+          if (isDummyValue(correctedPl)) {
+            correctedPl = "";
+            if (pn.rawData) {
+              const extracted = extractProductLineFromRow(pn.rawData);
+              if (extracted && !isDummyValue(extracted)) {
+                correctedPl = extracted;
+              }
+            }
+          }
+
+          const hasLegacyCallReports = pn.tasks?.some(
+            (t) =>
+              t.owner === "FAE/PM" ||
+              t.owner === "Sales" ||
+              t.name.startsWith("[FAE/PM]") ||
+              t.name.startsWith("[Sales]") ||
+              t.name.startsWith("[FAE]") ||
+              t.name.startsWith("[PM]") ||
+              t.name.includes("Call Report[") ||
+              t.name.includes("Weekly update[")
+          );
+
+          if (!hasLegacyCallReports) {
+            if (correctedPl !== pn.productLine) {
+              return { ...pn, productLine: correctedPl };
+            }
+            return pn;
+          }
+
+          let updated = pn.updated || "";
+          if (!updated) {
+            const callReportTexts = pn.tasks
+              .filter(
+                (t) =>
+                  t.owner === "FAE/PM" ||
+                  t.owner === "Sales" ||
+                  t.name.startsWith("[FAE/PM]") ||
+                  t.name.startsWith("[Sales]") ||
+                  t.name.startsWith("[FAE]") ||
+                  t.name.startsWith("[PM]") ||
+                  t.name.includes("Call Report[") ||
+                  t.name.includes("Weekly update[")
+              )
+              .map((t) => t.name.replace(/^\[(FAE\/PM|Sales|FAE|PM)\]\s*/, ""));
+            updated = callReportTexts.join("\n");
+          }
+
+          const cleanedTasks = pn.tasks.filter(
+            (t) =>
+              t.owner !== "FAE/PM" &&
+              t.owner !== "Sales" &&
+              !t.name.startsWith("[FAE/PM]") &&
+              !t.name.startsWith("[Sales]") &&
+              !t.name.startsWith("[FAE]") &&
+              !t.name.startsWith("[PM]") &&
+              !t.name.includes("Call Report[") &&
+              !t.name.includes("Weekly update[")
+          );
+
+          return {
+            ...pn,
+            productLine: correctedPl,
+            updated,
+            tasks: cleanedTasks,
+          };
+        });
+        const computedLtr = calculatePnTotalLtr(updatedPns);
+        return {
+          ...p,
+          ltrAmt: computedLtr || p.ltrAmt || "",
+          pns: updatedPns,
+        };
+      }),
+    }));
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
         const saved = await get<Customer[]>(STORAGE_KEY);
         if (saved && saved.length > 0) {
-          setCustomers(saved);
+          const sanitized = sanitizeLoadedCustomers(saved);
+          setCustomers(sanitized);
         } else {
           // Check localStorage for migration (if upgrading from previous version)
           const oldSaved = localStorage.getItem(STORAGE_KEY);
           if (oldSaved) {
             const parsed = JSON.parse(oldSaved);
-            setCustomers(parsed);
+            const sanitized = sanitizeLoadedCustomers(parsed);
+            setCustomers(sanitized);
             // Optionally, we could clean it up after migrating:
             // localStorage.removeItem(STORAGE_KEY);
           } else {
@@ -434,6 +534,7 @@ export default function App() {
     productLine: string;
     status: PNStatus;
     drStatus: string;
+    marketSegment?: string;
     socketCreateDate: string;
     socketTotalLtrAmt: string;
     channelOk: 'Yes' | 'No';
@@ -456,6 +557,7 @@ export default function App() {
                   productLine: data.productLine,
                   status: data.status,
                   drStatus: data.drStatus,
+                  marketSegment: data.marketSegment || p.marketSegment,
                   socketCreateDate: data.socketCreateDate,
                   socketTotalLtrAmt: data.socketTotalLtrAmt,
                   channelOk: data.channelOk,
@@ -464,7 +566,13 @@ export default function App() {
                   createdAt: Date.now(),
                   updatedAt: Date.now(),
                 };
-                return { ...p, updatedAt: Date.now(), pns: [...p.pns, newPN] };
+                const updatedPns = [...p.pns, newPN];
+                return {
+                  ...p,
+                  updatedAt: Date.now(),
+                  pns: updatedPns,
+                  ltrAmt: calculatePnTotalLtr(updatedPns) || p.ltrAmt,
+                };
               }
               return p;
             }),
@@ -519,36 +627,38 @@ export default function App() {
             updatedAt: Date.now(),
             projects: c.projects.map((p) => {
               if (p.id === projectId) {
+                const updatedPns = p.pns.map((pItem) => {
+                  if (pItem.id === pnId) {
+                    const updatedTasks = data.tasks.map((t) => {
+                      const isNew = t.id.startsWith('task_');
+                      return {
+                        ...t,
+                        id: isNew ? generateId() : t.id,
+                        createdAt: t.createdAt || Date.now(),
+                        updatedAt: Date.now(),
+                      };
+                    });
+                    return {
+                      ...pItem,
+                      name: data.name,
+                      productLine: data.productLine,
+                      status: data.status,
+                      drStatus: data.drStatus,
+                      socketCreateDate: data.socketCreateDate,
+                      socketTotalLtrAmt: data.socketTotalLtrAmt,
+                      channelOk: data.channelOk,
+                      remark: data.remark,
+                      tasks: updatedTasks,
+                      updatedAt: Date.now(),
+                    };
+                  }
+                  return pItem;
+                });
                 return {
                   ...p,
                   updatedAt: Date.now(),
-                  pns: p.pns.map((pItem) => {
-                    if (pItem.id === pnId) {
-                      const updatedTasks = data.tasks.map((t) => {
-                        const isNew = t.id.startsWith('task_');
-                        return {
-                          ...t,
-                          id: isNew ? generateId() : t.id,
-                          createdAt: t.createdAt || Date.now(),
-                          updatedAt: Date.now(),
-                        };
-                      });
-                      return {
-                        ...pItem,
-                        name: data.name,
-                        productLine: data.productLine,
-                        status: data.status,
-                        drStatus: data.drStatus,
-                        socketCreateDate: data.socketCreateDate,
-                        socketTotalLtrAmt: data.socketTotalLtrAmt,
-                        channelOk: data.channelOk,
-                        remark: data.remark,
-                        tasks: updatedTasks,
-                        updatedAt: Date.now(),
-                      };
-                    }
-                    return pItem;
-                  }),
+                  pns: updatedPns,
+                  ltrAmt: calculatePnTotalLtr(updatedPns) || p.ltrAmt,
                 };
               }
               return p;
@@ -642,20 +752,25 @@ export default function App() {
 
   const handleSaveProject = (data: {
     nameZh: string;
-    nameEn: string;
-    customerCode: string;
-    salesEn: string;
-    salesCn: string;
-    customerRd: string;
-    marketSegment: string;
+    nameEn?: string;
+    customerCode?: string;
+    salesEn?: string;
+    salesCn?: string;
+    customerRd?: string;
     projectName: string;
-    productLine: string;
-    pnName: string;
-    pnStatus: PNStatus;
-    drStatus: string;
-    socketCreateDate: string;
-    socketTotalLtrAmt: string;
+    marketSegment?: string;
     mpSchedule?: string;
+    ltrAmt?: string;
+    ownerName?: string;
+    ownerTitle?: string;
+    ownerPhone?: string;
+    ownerEmail?: string;
+    productLine?: string;
+    pnName?: string;
+    pnStatus?: PNStatus;
+    drStatus?: string;
+    socketCreateDate?: string;
+    socketTotalLtrAmt?: string;
   }) => {
     setCustomers(prev => {
       let newCustomers = [...prev];
@@ -666,11 +781,11 @@ export default function App() {
         customer = {
           id: generateId(),
           nameZh: data.nameZh,
-          nameEn: data.nameEn,
-          customerCode: data.customerCode,
-          salesEn: data.salesEn,
-          salesCn: data.salesCn,
-          customerRd: data.customerRd,
+          nameEn: data.nameEn || "",
+          customerCode: data.customerCode || "",
+          salesEn: data.salesEn || "",
+          salesCn: data.salesCn || "",
+          customerRd: data.customerRd || "",
           projects: [],
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -678,11 +793,11 @@ export default function App() {
         newCustomers.push(customer);
       } else {
         customer = { ...newCustomers[customerIndex] };
-        customer.nameEn = data.nameEn || customer.nameEn;
-        customer.customerCode = data.customerCode || customer.customerCode;
-        customer.salesEn = data.salesEn || customer.salesEn;
-        customer.salesCn = data.salesCn || customer.salesCn;
-        customer.customerRd = data.customerRd || customer.customerRd;
+        if (data.nameEn) customer.nameEn = data.nameEn;
+        if (data.customerCode) customer.customerCode = data.customerCode;
+        if (data.salesEn) customer.salesEn = data.salesEn;
+        if (data.salesCn) customer.salesCn = data.salesCn;
+        if (data.customerRd) customer.customerRd = data.customerRd;
         customer.updatedAt = Date.now();
         customer.projects = [...customer.projects];
         newCustomers[customerIndex] = customer;
@@ -695,48 +810,64 @@ export default function App() {
           id: generateId(),
           name: data.projectName,
           pns: [],
-          mpSchedule: data.mpSchedule,
+          mpSchedule: data.mpSchedule || "",
+          marketSegment: data.marketSegment || "",
+          ltrAmt: data.ltrAmt || data.socketTotalLtrAmt || "",
+          ownerName: data.ownerName || "",
+          ownerTitle: data.ownerTitle || "",
+          ownerPhone: data.ownerPhone || "",
+          ownerEmail: data.ownerEmail || "",
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
         customer.projects.push(project);
       } else {
         project = { ...customer.projects[projectIndex] };
-        if (data.mpSchedule) {
-          project.mpSchedule = data.mpSchedule;
+        if (data.mpSchedule !== undefined) project.mpSchedule = data.mpSchedule;
+        if (data.marketSegment !== undefined) project.marketSegment = data.marketSegment;
+        if (data.ltrAmt !== undefined || data.socketTotalLtrAmt !== undefined) {
+          project.ltrAmt = data.ltrAmt || data.socketTotalLtrAmt || project.ltrAmt;
         }
+        if (data.ownerName !== undefined) project.ownerName = data.ownerName;
+        if (data.ownerTitle !== undefined) project.ownerTitle = data.ownerTitle;
+        if (data.ownerPhone !== undefined) project.ownerPhone = data.ownerPhone;
+        if (data.ownerEmail !== undefined) project.ownerEmail = data.ownerEmail;
         project.updatedAt = Date.now();
         project.pns = [...project.pns];
         customer.projects[projectIndex] = project;
       }
 
-      let pnIndex = project.pns.findIndex(p => p.name === data.pnName);
-      let pn: PN;
-      if (pnIndex === -1) {
-        pn = {
-          id: generateId(),
-          name: data.pnName,
-          productLine: data.productLine,
-          status: data.pnStatus,
-          drStatus: data.drStatus,
-          socketCreateDate: data.socketCreateDate,
-          socketTotalLtrAmt: data.socketTotalLtrAmt,
-          marketSegment: data.marketSegment,
-          tasks: [],
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        project.pns.push(pn);
-      } else {
-        pn = { ...project.pns[pnIndex] };
-        pn.productLine = data.productLine || pn.productLine;
-        pn.status = data.pnStatus || pn.status;
-        pn.drStatus = data.drStatus || pn.drStatus;
-        pn.marketSegment = data.marketSegment || pn.marketSegment;
-        pn.socketCreateDate = data.socketCreateDate || pn.socketCreateDate;
-        pn.socketTotalLtrAmt = data.socketTotalLtrAmt || pn.socketTotalLtrAmt;
-        pn.updatedAt = Date.now();
-        project.pns[pnIndex] = pn;
+      // 如果提供了料号名称，才同步添加/更新料号
+      if (data.pnName && data.pnName.trim()) {
+        let pnIndex = project.pns.findIndex(p => p.name === data.pnName);
+        let pn: PN;
+        if (pnIndex === -1) {
+          pn = {
+            id: generateId(),
+            name: data.pnName.trim(),
+            productLine: data.productLine || "",
+            status: data.pnStatus || "NBO",
+            drStatus: data.drStatus || "",
+            socketCreateDate: data.socketCreateDate || "",
+            socketTotalLtrAmt: data.socketTotalLtrAmt || data.ltrAmt || "",
+            marketSegment: data.marketSegment || "",
+            tasks: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          project.pns.push(pn);
+        } else {
+          pn = { ...project.pns[pnIndex] };
+          pn.productLine = data.productLine || pn.productLine;
+          pn.status = data.pnStatus || pn.status;
+          pn.drStatus = data.drStatus || pn.drStatus;
+          pn.marketSegment = data.marketSegment || pn.marketSegment;
+          pn.socketCreateDate = data.socketCreateDate || pn.socketCreateDate;
+          pn.socketTotalLtrAmt = data.socketTotalLtrAmt || data.ltrAmt || pn.socketTotalLtrAmt;
+          pn.updatedAt = Date.now();
+          project.pns[pnIndex] = pn;
+        }
+        project.ltrAmt = calculatePnTotalLtr(project.pns) || project.ltrAmt;
       }
 
       // Expand the newly created/updated customer and project
@@ -766,7 +897,15 @@ export default function App() {
       socketTotalLtrAmt: string;
       channelOk?: 'Yes' | 'No';
       remark?: string;
-    }>
+    }>,
+    extraFields?: {
+      marketSegment?: string;
+      ltrAmt?: string;
+      ownerName?: string;
+      ownerTitle?: string;
+      ownerPhone?: string;
+      ownerEmail?: string;
+    }
   ) => {
     if (!activeEditProject) return;
     const { customer } = activeEditProject;
@@ -812,10 +951,18 @@ export default function App() {
                 }
               });
 
+              const finalLtr = calculatePnTotalLtr(updatedPns) || extraFields?.ltrAmt || p.ltrAmt;
+
               return {
                 ...p,
                 name: projectName,
                 mpSchedule: mpSchedule,
+                marketSegment: extraFields?.marketSegment !== undefined ? extraFields.marketSegment : p.marketSegment,
+                ltrAmt: finalLtr,
+                ownerName: extraFields?.ownerName !== undefined ? extraFields.ownerName : p.ownerName,
+                ownerTitle: extraFields?.ownerTitle !== undefined ? extraFields.ownerTitle : p.ownerTitle,
+                ownerPhone: extraFields?.ownerPhone !== undefined ? extraFields.ownerPhone : p.ownerPhone,
+                ownerEmail: extraFields?.ownerEmail !== undefined ? extraFields.ownerEmail : p.ownerEmail,
                 pns: updatedPns,
                 updatedAt: Date.now(),
               };
@@ -924,7 +1071,10 @@ export default function App() {
             }
             return pn;
           });
-          if (projectUpdated) return { ...p, pns: newPns, updatedAt: Date.now() };
+          if (projectUpdated) {
+            const computedLtr = field === "socketTotalLtrAmt" ? (calculatePnTotalLtr(newPns) || p.ltrAmt) : p.ltrAmt;
+            return { ...p, pns: newPns, ltrAmt: computedLtr, updatedAt: Date.now() };
+          }
           return p;
         });
         if (customerUpdated) return { ...c, projects: newProjects, updatedAt: Date.now() };
@@ -1037,7 +1187,7 @@ export default function App() {
         c.projects = c.projects.filter(proj => proj.id !== projectId);
       } else {
         c.projects = [...c.projects];
-        c.projects[pIndex] = { ...p, updatedAt: Date.now() };
+        c.projects[pIndex] = { ...p, ltrAmt: calculatePnTotalLtr(p.pns), updatedAt: Date.now() };
       }
       
       if (c.projects.length === 0) {
@@ -1418,9 +1568,15 @@ export default function App() {
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const imported = await excelService.importFromExcel(file, customers);
-      setCustomers(imported);
-      setShowImportMenu(false);
+      try {
+        const imported = await excelService.importFromExcel(file, customers);
+        setCustomers(imported);
+        setShowImportMenu(false);
+        setToast({ message: `成功导入 ${imported.length} 位客户数据` });
+      } catch (err) {
+        console.error("Excel import error:", err);
+        setToast({ message: "Excel 解析导入失败，请检查文件格式" });
+      }
     }
     // Reset file input so the same file can be imported again
     if (e.target) {
@@ -1444,43 +1600,69 @@ export default function App() {
   };
 
   if (!isLoggedIn) {
+    const savedCustomWp = typeof window !== "undefined" ? localStorage.getItem("macos_custom_wallpaper") : null;
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1C1C1E] dark:to-black">
-        <div className="bg-white/80 dark:bg-[#2C2C2E]/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl w-[420px] border border-white/20 dark:border-white/10">
+      <div className="relative h-screen flex items-center justify-center overflow-hidden select-none">
+        {/* Ambient wallpaper for login matching user's custom wallpaper */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none transition-all duration-700" 
+          style={{ 
+            background: savedCustomWp 
+              ? `url(${savedCustomWp}) center/cover no-repeat` 
+              : "url(https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop) center/cover no-repeat",
+            backgroundColor: "#11141A"
+          }}
+        >
+          <div className="absolute inset-0 bg-black/25" />
+          <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-white/10 blur-[120px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-black/30 blur-[130px]" />
+        </div>
+
+        <div className="macos-glass-modal p-8 sm:p-10 rounded-[32px] w-[420px] max-w-[92vw] shadow-2xl relative z-10 transition-all duration-300">
+          {/* macOS Window Traffic Lights */}
+          <div className="flex items-center justify-between mb-8 pb-3 border-b border-black/5 dark:border-white/10">
+            <div className="flex items-center gap-2 select-none">
+              <div className="w-3 h-3 rounded-full macos-traffic-red" />
+              <div className="w-3 h-3 rounded-full macos-traffic-yellow" />
+              <div className="w-3 h-3 rounded-full macos-traffic-green" />
+            </div>
+            <span className="text-[10px] font-bold text-white/70 dark:text-white/60 tracking-widest uppercase">macOS Sonoma · FAE</span>
+          </div>
+
           <div className="flex flex-col items-center mb-8">
-            <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#007AFF] via-[#0A84FF] to-[#5AC8FA] flex items-center justify-center text-white shadow-lg shadow-[#007AFF]/25 mb-4 border border-white/50">
               <GanttChartSquare className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">欢迎回来</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">FAE 项目进度管理系统</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">欢迎回来</h1>
+            <p className="text-white/70 dark:text-white/70 mt-1.5 text-xs font-semibold tracking-wider uppercase">FAE 项目进度管理系统</p>
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 ml-1">账号</label>
+                <label className="block text-xs font-bold text-white/70 dark:text-white/70 uppercase tracking-wider mb-2 ml-1">账号</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
+                    className="apple-input !pl-11 !py-3.5 !rounded-2xl font-medium"
                     placeholder="请输入账号"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 ml-1">密码</label>
+                <label className="block text-xs font-bold text-white/70 dark:text-white/70 uppercase tracking-wider mb-2 ml-1">密码</label>
                 <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 flex items-center justify-center">
-                    <span className="text-lg">●</span>
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70 flex items-center justify-center">
+                    <span className="text-base leading-none">●</span>
                   </div>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all font-medium"
+                    className="apple-input !pl-11 !py-3.5 !rounded-2xl font-medium"
                     placeholder="请输入密码"
                   />
                 </div>
@@ -1488,9 +1670,9 @@ export default function App() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${rememberMe ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-gray-600 bg-transparent'}`}>
-                  {rememberMe && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+              <label className="flex items-center gap-2 cursor-pointer group select-none">
+                <div className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-colors ${rememberMe ? 'bg-[#007AFF] border-[#007AFF]' : 'border-[#C7C7CC] dark:border-[#3A3A3C] bg-black/5 dark:bg-white/5'}`}>
+                  {rememberMe && <CheckCircle2 className="w-3 h-3 text-white" />}
                 </div>
                 <input 
                   type="checkbox" 
@@ -1498,12 +1680,12 @@ export default function App() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="hidden"
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">记住登录</span>
+                <span className="text-xs text-white/80 group-hover:text-white font-medium transition-colors">记住登录</span>
               </label>
             </div>
 
             {loginError && (
-              <div className="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl text-sm font-medium">
+              <div className="flex items-center gap-2 text-[#FF3B30] bg-[#FF3B30]/10 p-3 rounded-xl text-xs font-medium border border-[#FF3B30]/20">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {loginError}
               </div>
@@ -1511,7 +1693,7 @@ export default function App() {
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 active:scale-[0.98] transition-all duration-200"
+              className="apple-button-primary w-full !py-3.5 !rounded-2xl font-bold tracking-wide cursor-pointer"
             >
               登录系统
             </button>
@@ -1522,14 +1704,20 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#F5F5F7] dark:bg-black font-sans overflow-hidden text-[#1D1D1F] dark:text-[#F5F5F7] transition-colors duration-300">
+    <div className="relative flex flex-col h-screen font-sans overflow-hidden text-white transition-colors duration-300">
+      {/* macOS Desktop Wallpaper Layer */}
+      <MacDesktopLayer 
+        isPickerOpen={isWallpaperPickerOpen} 
+        onClosePicker={() => setIsWallpaperPickerOpen(false)} 
+      />
+
       {/* Top Bar */}
-      <header className="glass-nav h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap">
-        <div className="flex items-center gap-4 md:gap-6 shrink-0">
+      <header className="relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20">
+        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="md:hidden p-2 text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white rounded-lg transition-colors"
+            className="md:hidden p-2 text-white/75 hover:text-white rounded-lg transition-colors no-drag"
           >
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -1537,230 +1725,293 @@ export default function App() {
           <div className="flex items-center gap-3 md:gap-4 shrink-0">
             <button 
               onClick={() => setIsOverviewOpen(true)}
-              className="p-2 md:p-2.5 bg-gradient-to-br from-[#E5E5EA] to-[#F2F2F7] rounded-xl shadow-sm border border-white/50 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+              className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
               title="查看数据概览"
             >
-              <GanttChartSquare className="w-5 h-5 text-[#8E8E93]" />
+              <GanttChartSquare className="w-5 h-5 text-[var(--accent-color,#FFFFFF)] transition-colors" />
             </button>
             <div className="shrink-0">
               <h1 
-                className="text-base md:text-lg font-bold tracking-tight cursor-pointer hover:text-[#007AFF] transition-colors"
+                className="text-base md:text-lg font-bold tracking-tight cursor-pointer hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors no-drag inline-block pt-1 pb-1"
                 onClick={() => window.location.reload()}
                 title="刷新页面"
               >
                 FAE 项目进度管理
               </h1>
-              <p className="text-[8px] md:text-[9px] font-bold text-[#8E8E93] uppercase tracking-widest hidden sm:block">
+              <p className="text-[8px] md:text-[9px] font-bold text-white/70 uppercase tracking-widest hidden sm:block drop-shadow-xs">
                 Project Gantt Dashboard
               </p>
             </div>
           </div>
 
-          <div className="hidden md:block w-px h-8 bg-black/10 dark:bg-white/10 shrink-0"></div>
+          <div className="hidden md:block w-px h-8 bg-white/15 shrink-0 relative z-10"></div>
 
           {/* Time Display - Click to Scroll To Today */}
           <button
             onClick={() => {
               scrollToToday("smooth");
             }}
-            className="hidden sm:flex flex-col justify-center text-left shrink-0 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04] p-1.5 px-2 rounded-xl active:scale-95 transition-all duration-150 select-none group border border-transparent hover:border-black/5 dark:hover:border-white/5"
+            className="hidden sm:flex flex-col justify-center text-left shrink-0 cursor-pointer hover:bg-white/[0.08] p-1 px-2.5 rounded-xl active:scale-95 transition-all duration-150 select-none group border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] no-drag relative z-10"
             title="点击回到今天"
           >
-            <span className="text-[10px] font-medium text-[#8E8E93] dark:text-[#98989D] group-hover:text-[#007AFF] dark:group-hover:text-[#5AC8FA] transition-colors tabular-nums tracking-wider leading-none">
+            <span className="text-[10px] font-medium text-white/70 group-hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors tabular-nums tracking-wider leading-none">
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月{currentDate.getDate()}日 {["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][currentDate.getDay()]}
             </span>
-            <span className="text-base font-bold text-[#1D1D1F] dark:text-white group-hover:text-[#007AFF] dark:group-hover:text-[#5AC8FA] transition-colors tabular-nums tracking-widest mt-1 leading-none">
+            <span className="text-sm font-bold text-white group-hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors tabular-nums tracking-widest mt-0.5 leading-none">
               {String(currentDate.getHours()).padStart(2, '0')}:{String(currentDate.getMinutes()).padStart(2, '0')}:{String(currentDate.getSeconds()).padStart(2, '0')}
             </span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 relative z-10">
+          {/* Filter & Actions (风险及弹出的筛选标签，置于左侧，向中间自然延展，杜绝右侧操作区跳动) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Risk filter */}
+            <button
+              onClick={() => setFilterRisk(!filterRisk)}
+              className={cn(
+                "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95",
+                filterRisk
+                  ? "bg-red-500/25 text-red-100 border-red-500/40 font-bold"
+                  : "bg-white/[0.08] hover:bg-white/[0.18] text-white/80 hover:text-white border-white/15 hover:border-white/25 font-semibold",
+              )}
+              title="仅显示有风险的任务"
+            >
+              <span className={cn("w-1.5 h-1.5 rounded-full", filterRisk ? "bg-red-400 animate-pulse" : "bg-white/40")} />
+              <span>风险</span>
+            </button>
+
+            {filterStatus && (
+              <button
+                onClick={() => setFilterStatus(null)}
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                title="清除状态筛选"
+              >
+                <span>{filterStatus}</span>
+                <X className="w-3 h-3 shrink-0 text-white/70" />
+              </button>
+            )}
+            {filterProductLine && (
+              <button
+                onClick={() => setFilterProductLine(null)}
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                title="清除产品线筛选"
+              >
+                <span>{filterProductLine}</span>
+                <X className="w-3 h-3 shrink-0 text-white/70" />
+              </button>
+            )}
+            {filterSales && (
+              <button
+                onClick={() => setFilterSales(null)}
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                title="清除 Sales 筛选"
+              >
+                <span>{filterSales}</span>
+                <X className="w-3 h-3 shrink-0 text-white/70" />
+              </button>
+            )}
+          </div>
+
+          <div className="hidden sm:block w-px h-5 bg-white/15 shrink-0" />
+
+          {/* View Mode Switcher (only show in gantt mode) - placed to the left of Add Customer to avoid layout jumping */}
+          {displayMode === "gantt" && (
+            <div className="hidden sm:flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
+              {(["day", "week", "month"] as ViewMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className="relative h-[26px] px-2.5 rounded-lg text-xs shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors"
+                >
+                  {viewMode === mode && (
+                    <motion.div
+                      layoutId="activeViewModeIndicator"
+                      className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
+                      transition={{ type: "spring", stiffness: 480, damping: 32 }}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "relative z-10 transition-colors",
+                      viewMode === mode
+                        ? "text-white font-bold drop-shadow-xs"
+                        : "text-white/70 hover:text-white font-medium",
+                    )}
+                  >
+                    {mode === "day" ? "日" : mode === "week" ? "周" : "月"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Add Customer Button */}
           <button
             onClick={() => { setShowAddCustomerModal(true); }}
-            className="flex items-center justify-center px-3 py-1.5 bg-black/5 dark:bg-white/10 text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white rounded-xl hover:bg-black/10 dark:hover:bg-white/20 transition-colors border border-black/5 dark:border-white/10 shrink-0 select-none whitespace-nowrap"
+            className="h-8 flex items-center justify-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
             title="添加新客户"
           >
-            <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-xs font-bold ml-1 hidden lg:inline">添加客户</span>
+            <Plus className="w-3.5 h-3.5 shrink-0 text-[var(--accent-color,#FFFFFF)] transition-colors" />
+            <span className="hidden sm:inline">添加客户</span>
           </button>
 
           {/* Zoom Controls - Compact */}
-          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 p-1 rounded-xl shrink-0">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
             <button
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              className="p-1 hover:bg-white dark:hover:bg-[#1C1C1E] rounded-lg transition-all text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white shrink-0"
+              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              title="缩小"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] font-bold w-9 text-center tabular-nums shrink-0">
+            <span className="text-[11px] font-semibold w-10 text-center tabular-nums shrink-0 text-white/90 select-none">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-              className="p-1 hover:bg-white dark:hover:bg-[#1C1C1E] rounded-lg transition-all text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white shrink-0"
+              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              title="放大"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Display Mode Switcher */}
-          <div className="flex bg-black/5 dark:bg-white/10 p-1 rounded-xl shrink-0">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
             <button
               onClick={() => setDisplayMode("gantt")}
-              className={cn(
-                "p-1.5 rounded-lg text-xs transition-all flex items-center justify-center shrink-0",
-                displayMode === "gantt"
-                  ? "bg-white dark:bg-[#1C1C1E] text-[#007AFF] shadow-sm"
-                  : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-              )}
+              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="甘特图模式"
             >
-              <LayoutList className="w-3.5 h-3.5" />
+              {displayMode === "gantt" && (
+                <motion.div
+                  layoutId="activeDisplayModeIndicator"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 480, damping: 32 }}
+                />
+              )}
+              <LayoutList
+                className={cn(
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
+                  displayMode === "gantt" ? "text-white" : "text-white/70 hover:text-white",
+                )}
+              />
             </button>
             <button
               onClick={() => setDisplayMode("excel")}
-              className={cn(
-                "p-1.5 rounded-lg text-xs transition-all flex items-center justify-center shrink-0",
-                displayMode === "excel"
-                  ? "bg-white dark:bg-[#1C1C1E] text-[#007AFF] shadow-sm"
-                  : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-              )}
+              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="Excel 表格模式"
             >
-              <Table className="w-3.5 h-3.5" />
+              {displayMode === "excel" && (
+                <motion.div
+                  layoutId="activeDisplayModeIndicator"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 480, damping: 32 }}
+                />
+              )}
+              <Table
+                className={cn(
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
+                  displayMode === "excel" ? "text-white" : "text-white/70 hover:text-white",
+                )}
+              />
             </button>
           </div>
 
-          {/* View Mode Switcher (only show in gantt mode) */}
-          {displayMode === "gantt" && (
-            <div className="hidden sm:flex bg-black/5 dark:bg-white/10 p-1 rounded-xl shrink-0">
-              {(["day", "week", "month"] as ViewMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={cn(
-                    "px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
-                    viewMode === mode
-                      ? "bg-white dark:bg-[#1C1C1E] text-[#007AFF] shadow-sm"
-                      : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-                  )}
-                >
-                  {mode === "day" ? "日" : mode === "week" ? "周" : "月"}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Dark Mode Switcher */}
-          <div className="flex bg-black/5 dark:bg-white/10 p-1 rounded-xl shrink-0">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
             <button
               onClick={() => setIsDarkMode(false)}
-              className={cn(
-                "p-1.5 rounded-lg text-xs transition-all flex items-center justify-center shrink-0",
-                !isDarkMode
-                  ? "bg-white dark:bg-[#1C1C1E] text-[#007AFF] shadow-sm"
-                  : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-              )}
+              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="白天模式"
             >
-              <Sun className="w-3.5 h-3.5" />
+              {!isDarkMode && (
+                <motion.div
+                  layoutId="activeThemeIndicator"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 480, damping: 32 }}
+                />
+              )}
+              <Sun
+                className={cn(
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
+                  !isDarkMode ? "text-white" : "text-white/70 hover:text-white",
+                )}
+              />
             </button>
             <button
               onClick={() => setIsDarkMode(true)}
-              className={cn(
-                "p-1.5 rounded-lg text-xs transition-all flex items-center justify-center shrink-0",
-                isDarkMode
-                  ? "bg-white dark:bg-[#1C1C1E] text-[#007AFF] shadow-sm"
-                  : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-              )}
+              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="晚上模式"
             >
-              <Moon className="w-3.5 h-3.5" />
+              {isDarkMode && (
+                <motion.div
+                  layoutId="activeThemeIndicator"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 480, damping: 32 }}
+                />
+              )}
+              <Moon
+                className={cn(
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
+                  isDarkMode ? "text-white" : "text-white/70 hover:text-white",
+                )}
+              />
             </button>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-xl p-1 shrink-0">
-              <button
-                onClick={() => setFilterRisk(!filterRisk)}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
-                  filterRisk
-                    ? "bg-[#FF3B30] text-white shadow-sm"
-                    : "text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white",
-                )}
-              >
-                风险
-              </button>
-              {filterStatus && (
-                <button
-                  onClick={() => setFilterStatus(null)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[#FF9500] text-white shadow-sm flex items-center gap-1 shrink-0"
-                  title="清除状态筛选"
-                >
-                  {filterStatus}
-                  <X className="w-3 h-3 shrink-0" />
-                </button>
-              )}
-              {filterProductLine && (
-                <button
-                  onClick={() => setFilterProductLine(null)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[#007AFF] text-white shadow-sm flex items-center gap-1 shrink-0"
-                  title="清除产品线筛选"
-                >
-                  {filterProductLine}
-                  <X className="w-3 h-3 shrink-0" />
-                </button>
-              )}
-              {filterSales && (
-                <button
-                  onClick={() => setFilterSales(null)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[#AF52DE] text-white shadow-sm flex items-center gap-1 shrink-0"
-                  title="清除 Sales 筛选"
-                >
-                  {filterSales}
-                  <X className="w-3 h-3 shrink-0" />
-                </button>
-              )}
-            </div>
+          <div className="hidden sm:block w-px h-5 bg-white/15 shrink-0" />
 
-            <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+              {/* Wallpaper Picker */}
+              <button
+                onClick={() => setIsWallpaperPickerOpen(true)}
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] transition-all shrink-0 cursor-pointer shadow-xs"
+                title="桌面背景与外观微光设置"
+              >
+                <Palette className="w-3.5 h-3.5 text-[var(--accent-color,#FFFFFF)] transition-colors" />
+              </button>
+
+              {/* Import Excel */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[#8E8E93] hover:bg-black/5 dark:hover:bg-white/10 hover:text-[#1D1D1F] dark:hover:text-white rounded-xl transition-colors border border-black/5 dark:border-white/10 text-xs font-bold shrink-0 whitespace-nowrap"
+                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
                 title="导入 Excel"
               >
                 <Upload className="w-3.5 h-3.5 shrink-0" />
-                <span>导入</span>
+                <span className="hidden sm:inline">导入</span>
               </button>
+
+              {/* Export Excel */}
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[#8E8E93] hover:bg-black/5 dark:hover:bg-white/10 hover:text-[#1D1D1F] dark:hover:text-white rounded-xl transition-colors border border-black/5 dark:border-white/10 text-xs font-bold shrink-0 whitespace-nowrap"
+                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
                 title="导出 Excel"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
-                <span>导出</span>
+                <span className="hidden sm:inline">导出</span>
               </button>
+
+              {/* Clear Data */}
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="p-2 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-xl transition-colors shrink-0"
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/70 hover:text-red-300 border border-white/15 hover:border-red-500/30 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs"
                 title="清空所有数据"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
+
+              {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="p-2 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-xl transition-colors shrink-0"
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/70 hover:text-white border border-white/15 hover:border-white/25 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs"
                 title="退出登录"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
-        </div>
       </header>
 
       {/* Hidden Inputs */}
@@ -1773,7 +2024,7 @@ export default function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden relative p-0 md:p-6 gap-0 md:gap-6">
+      <main className="flex-1 flex overflow-hidden relative p-0 md:p-6 gap-0 md:gap-6 z-10">
         {/* Mobile Overlay */}
         {displayMode === "gantt" && isSidebarOpen && (
           <div 
@@ -1786,18 +2037,18 @@ export default function App() {
         {displayMode === "gantt" && (
         <aside
           className={cn(
-            "apple-card flex flex-col shrink-0 overflow-hidden bg-white dark:bg-[#1C1C1E]",
+            "apple-card flex flex-col shrink-0 overflow-hidden",
             "fixed inset-y-0 left-0 z-50 w-[85vw] md:w-auto md:static shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out",
             !isSidebarOpen && "-translate-x-full md:translate-x-0"
           )}
           style={{ width: window.innerWidth >= 768 ? sidebarWidth : undefined }}
         >
           {/* Mobile Header for Sidebar */}
-          <div className="md:hidden h-16 flex items-center justify-between px-4 border-b border-black/5 dark:border-white/5 shrink-0">
+          <div className="md:hidden h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
             <span className="font-bold text-lg">项目列表</span>
             <button 
               onClick={() => setIsSidebarOpen(false)}
-              className="p-2 text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white"
+              className="p-2 text-white/80 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1808,21 +2059,21 @@ export default function App() {
             className="hidden md:block absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-black/10 active:bg-black/20 transition-colors z-10"
             onMouseDown={handleSidebarMouseDown}
           />
-          <div className="h-[72px] px-3 flex flex-col justify-center gap-2 border-b border-black/5 dark:border-white/5 shrink-0 bg-black/[0.015] dark:bg-white/[0.015]">
+          <div className="h-[72px] px-3 flex flex-col justify-center gap-2 border-b border-black/[0.03] dark:border-white/[0.03] shrink-0 bg-transparent select-none cursor-default">
             {/* Row 1: Search Input */}
             <div className="relative w-full">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8E8E93]" />
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/70 pointer-events-none" />
               <input
                 type="text"
                 placeholder="搜索项目..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-6.5 pr-6 py-1.5 bg-black/[0.03] dark:bg-white/5 rounded-lg text-xs focus:ring-2 focus:ring-[#0071E3]/30 outline-none transition-all placeholder:text-[#8E8E93] text-[#1D1D1F] dark:text-white font-medium"
+                className="w-full pl-6.5 pr-6 py-1.5 bg-white/10 rounded-lg text-xs focus:ring-2 focus:ring-[#0071E3]/30 outline-none transition-all placeholder:text-white/40 text-white font-medium cursor-text select-text"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-white/15 rounded-full transition-colors text-white/80 hover:text-white"
                 >
                   <X className="w-2.5 h-2.5" />
                 </button>
@@ -1832,25 +2083,24 @@ export default function App() {
             {/* Row 2: Action Toolbar */}
             <div className="flex items-center justify-between px-0.5">
               {/* Sort Selector */}
-              <div className="relative active:scale-95 transition-transform duration-150">
-                <select
-                  value={sortType}
-                  onChange={(e) => setSortType(e.target.value as any)}
-                  className="appearance-none bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.04] rounded-md pl-1.5 pr-5 py-0.5 text-xs font-medium text-[#8E8E93] dark:text-[#98989D] outline-none cursor-pointer transition-all duration-200"
-                >
-                  <option value="createdAt_desc" className="bg-[#F5F5F7] dark:bg-[#1C1C1E] text-black dark:text-white">创建降序</option>
-                  <option value="createdAt_asc" className="bg-[#F5F5F7] dark:bg-[#1C1C1E] text-black dark:text-white">创建升序</option>
-                  <option value="updatedAt_desc" className="bg-[#F5F5F7] dark:bg-[#1C1C1E] text-black dark:text-white">修改降序</option>
-                  <option value="updatedAt_asc" className="bg-[#F5F5F7] dark:bg-[#1C1C1E] text-black dark:text-white">修改升序</option>
-                </select>
-                <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-[#8E8E93] dark:text-[#98989D] pointer-events-none" />
-              </div>
+              <GlassSelect
+                value={sortType}
+                onChange={(val) => setSortType(val as any)}
+                options={[
+                  { value: "createdAt_desc", label: "创建降序" },
+                  { value: "createdAt_asc", label: "创建升序" },
+                  { value: "updatedAt_desc", label: "修改降序" },
+                  { value: "updatedAt_asc", label: "修改升序" },
+                ]}
+                size="xs"
+                className="!bg-black/[0.03] dark:!bg-white/[0.06] hover:!bg-black/[0.06] dark:hover:!bg-white/[0.1] !border-white/10 !rounded-md"
+              />
 
               {/* Expand / Collapse buttons without '全部' word */}
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={handleExpandAll}
-                  className="text-xs font-medium text-[#8E8E93] dark:text-[#98989D] bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-all active:scale-95 duration-150 cursor-pointer whitespace-nowrap text-center select-none"
+                  className="text-xs font-semibold text-white bg-black/[0.03] dark:bg-white/[0.06] hover:bg-black/[0.06] dark:hover:bg-white/[0.1] px-1.5 py-0.5 rounded-md transition-all active:scale-95 duration-150 cursor-pointer whitespace-nowrap text-center select-none glass-sub-text"
                   title="全部展开"
                 >
                   展开
@@ -1858,7 +2108,7 @@ export default function App() {
                 <div className="w-[1px] h-2.5 bg-black/10 dark:bg-white/10 shrink-0" />
                 <button
                   onClick={handleCollapseAll}
-                  className="text-xs font-medium text-[#8E8E93] dark:text-[#98989D] bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.04] px-1.5 py-0.5 rounded-md transition-all active:scale-95 duration-150 cursor-pointer whitespace-nowrap text-center select-none"
+                  className="text-xs font-semibold text-white bg-black/[0.03] dark:bg-white/[0.06] hover:bg-black/[0.06] dark:hover:bg-white/[0.1] px-1.5 py-0.5 rounded-md transition-all active:scale-95 duration-150 cursor-pointer whitespace-nowrap text-center select-none glass-sub-text"
                   title="全部收起"
                 >
                   收起
@@ -1877,7 +2127,7 @@ export default function App() {
               <div key={customer.id} className="flex flex-col gap-1 relative" style={{ contentVisibility: 'auto' }}>
                 {/* Customer Row */}
                 <div 
-                  className="group flex items-center gap-2 px-3 border-b border-transparent rounded-xl hover:bg-black/[0.03] transition-colors h-14 shrink-0 cursor-pointer select-none"
+                  className="group flex items-center gap-2 px-3 border-b border-white/15 rounded-xl hover:bg-black/[0.03] transition-colors h-14 shrink-0 cursor-pointer select-none"
                   onClick={() => toggleExpand(customer.id)}
                 >
                   <button
@@ -1898,7 +2148,7 @@ export default function App() {
                         onMouseLeave={() => handleNameMouseLeave(`cust_zh_${customer.id}`)}
                       >
                         <span
-                          className="text-base font-bold truncate text-[#1D1D1F] dark:text-white cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -ml-1 transition-colors"
+                          className="text-base font-bold truncate text-white cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -ml-1 transition-colors glass-title-text"
                           onClick={(e) => {
                             if (longHoverId === `cust_zh_${customer.id}`) {
                               e.stopPropagation();
@@ -1936,7 +2186,7 @@ export default function App() {
                         onMouseLeave={() => handleNameMouseLeave(`cust_en_${customer.id}`)}
                       >
                         <span
-                          className="text-xs text-[#8E8E93] truncate cursor-pointer hover:bg-black/5 rounded px-1 -ml-1 transition-colors"
+                          className="text-xs font-medium text-white/80 truncate cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -ml-1 transition-colors glass-sub-text"
                           onClick={(e) => {
                             if (longHoverId === `cust_en_${customer.id}`) {
                               e.stopPropagation();
@@ -1976,7 +2226,7 @@ export default function App() {
                         onMouseLeave={() => handleNameMouseLeave(`cust_code_${customer.id}`)}
                       >
                         <span
-                          className="text-[10px] bg-black/5 px-1.5 py-0.5 rounded text-[#8E8E93] font-mono cursor-pointer hover:bg-black/10 transition-colors"
+                          className="text-[10px] bg-black/[0.08] dark:bg-black/40 px-1.5 py-0.5 rounded text-white border border-black/5 dark:border-white/10 font-mono font-semibold cursor-pointer hover:bg-black/15 dark:hover:bg-black/60 transition-colors shadow-2xs glass-sub-text"
                           onClick={(e) => {
                             if (longHoverId === `cust_code_${customer.id}`) {
                               e.stopPropagation();
@@ -2014,7 +2264,7 @@ export default function App() {
                         onMouseLeave={() => handleNameMouseLeave(`cust_sales_${customer.id}`)}
                       >
                         <span
-                          className="text-[10px] text-[#8E8E93] cursor-pointer hover:bg-black/5 rounded px-1 -mr-1 transition-colors"
+                          className="text-[10px] font-semibold text-white/80 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -mr-1 transition-colors glass-sub-text"
                           onClick={(e) => {
                             if (longHoverId === `cust_sales_${customer.id}`) {
                               e.stopPropagation();
@@ -2055,7 +2305,7 @@ export default function App() {
                         e.stopPropagation();
                         addProject(customer.id);
                       }}
-                      className="p-1.5 text-[#8E8E93] hover:text-[#007AFF] dark:hover:text-[#0A84FF] hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/10 rounded-lg transition-colors"
+                      className="p-1.5 text-white/70 hover:text-[var(--accent-hover-color,#FFFFFF)] hover:bg-[var(--accent-subtle-bg,rgba(255,255,255,0.1))] rounded-lg transition-colors"
                       title="添加项目"
                     >
                       <Plus className="w-4 h-4" />
@@ -2065,7 +2315,7 @@ export default function App() {
                         e.stopPropagation();
                         deleteCustomer(customer.id);
                       }}
-                      className="p-1.5 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
+                      className="p-1.5 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
                       title="删除客户"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -2079,7 +2329,7 @@ export default function App() {
                     {(customer.projects || []).map((project) => (
                       <div key={project.id} className="flex flex-col gap-1">
                         <div 
-                          className="group flex items-center gap-2 px-3 border-b border-transparent rounded-xl hover:bg-black/[0.03] transition-colors h-10 shrink-0 cursor-pointer transform-gpu select-none"
+                          className="group flex items-center gap-2 px-3 border-b border-white/15 rounded-xl hover:bg-black/[0.03] transition-colors h-10 shrink-0 cursor-pointer transform-gpu select-none"
                           onClick={() => toggleExpand(project.id, (project.pns || []).map(pn => pn.id))}
                         >
                           <button
@@ -2098,7 +2348,7 @@ export default function App() {
                               onMouseLeave={() => handleNameMouseLeave(`proj_${project.id}`)}
                             >
                               <span
-                                className="text-sm font-semibold text-[#424245] dark:text-[#E5E5EA] truncate cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -ml-1 transition-colors"
+                                className="text-sm font-semibold text-[#1F2937] dark:text-[#F3F4F6] truncate cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -ml-1 transition-colors glass-title-text"
                                 onClick={(e) => {
                                   if (longHoverId === `proj_${project.id}`) {
                                     e.stopPropagation();
@@ -2110,10 +2360,22 @@ export default function App() {
                                   setActiveEditProject({ customer, project });
                                   setShowEditProjectModal(true);
                                 }}
-                                title={longHoverId === `proj_${project.id}` ? "单击复制" : "双击查看及编辑"}
+                                title={
+                                  longHoverId === `proj_${project.id}`
+                                    ? "单击复制"
+                                    : `项目: ${project.name || ""}${project.marketSegment ? `\n市场: ${project.marketSegment}` : ""}${project.mpSchedule ? `\n量产: ${project.mpSchedule}` : ""}${project.ltrAmt ? `\nLTR: ${project.ltrAmt}` : ""}${project.ownerName ? `\n负责人: ${project.ownerName}` : ""}${project.ownerTitle ? ` (${project.ownerTitle})` : ""}${project.ownerPhone ? `\n电话: ${project.ownerPhone}` : ""}${project.ownerEmail ? `\n邮箱: ${project.ownerEmail}` : ""}\n\n(双击查看及编辑项目)`
+                                }
                               >
                                 {renderHighlight(project.name, searchQuery)}
                               </span>
+                              {project.ownerName && (
+                                <span 
+                                  className="text-[10px] font-medium text-white/50 px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/10 shrink-0 select-none"
+                                  title={`负责人: ${project.ownerName}${project.ownerTitle ? ` (${project.ownerTitle})` : ""}`}
+                                >
+                                  {project.ownerName}
+                                </span>
+                              )}
                               {longHoverId === `proj_${project.id}` && (
                                 <motion.span
                                   initial={{ opacity: 0, scale: 0.8 }}
@@ -2138,7 +2400,7 @@ export default function App() {
                                 e.stopPropagation();
                                 addPN(customer.id, project.id);
                               }}
-                              className="p-1.5 text-[#8E8E93] hover:text-[#0071E3] dark:hover:text-[#0A84FF] hover:bg-[#0071E3]/5 dark:hover:bg-[#0A84FF]/10 rounded-lg"
+                              className="p-1.5 text-white/70 hover:text-[var(--accent-hover-color,#FFFFFF)] hover:bg-[var(--accent-subtle-bg,rgba(255,255,255,0.1))] rounded-lg"
                               title="添加料号PN"
                             >
                               <Plus className="w-3.5 h-3.5" />
@@ -2148,7 +2410,7 @@ export default function App() {
                                 e.stopPropagation();
                                 deleteProject(customer.id, project.id);
                               }}
-                              className="p-1.5 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
+                              className="p-1.5 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
                               title="删除项目"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2162,7 +2424,7 @@ export default function App() {
                             {(project.pns || []).map((pn) => (
                               <div key={pn.id} className="flex flex-col gap-1">
                                 <div 
-                                  className="group flex items-center gap-2 px-3 border-b border-transparent rounded-xl hover:bg-black/[0.03] transition-colors h-9 shrink-0 cursor-pointer transform-gpu select-none"
+                                  className="group flex items-center gap-2 px-3 border-b border-white/15 rounded-xl hover:bg-black/[0.03] transition-colors h-9 shrink-0 cursor-pointer transform-gpu select-none"
                                   onClick={() => toggleExpand(pn.id)}
                                 >
                                   <button
@@ -2175,7 +2437,7 @@ export default function App() {
                                     )}
                                   </button>
 
-                                  <div className="flex-1 flex items-center gap-2 overflow-hidden pointer-events-none">
+                                  <div className="flex-1 min-w-0 flex items-center gap-2 pointer-events-none">
                                     {/* Product Line with Warning if channel is No */}
                                     {pn.channelOk === "No" && (
                                       <span className="flex items-center justify-center text-[#FF3B30] shrink-0 pointer-events-auto" title="渠道不在">
@@ -2230,7 +2492,7 @@ export default function App() {
                                         onMouseLeave={() => handleNameMouseLeave(`pn_name_${pn.id}`)}
                                       >
                                         <span
-                                          className="text-xs font-bold text-[#8E8E93] truncate cursor-pointer hover:bg-black/5 rounded px-1 -ml-1 transition-colors"
+                                          className="text-xs font-bold text-white truncate cursor-pointer hover:bg-black/5 rounded px-1 -ml-1 transition-colors glass-sub-text"
                                           onClick={(e) => {
                                             if (longHoverId === `pn_name_${pn.id}`) {
                                               e.stopPropagation();
@@ -2262,51 +2524,43 @@ export default function App() {
                                       </div>
                                     </div>
 
-                                    {/* Status */}
-                                    {editingId === `${pn.id}_status` ? (
-                                      <select
-                                        autoFocus
-                                        defaultValue={pn.status}
-                                        onChange={(e) =>
-                                          updatePNField(
-                                            pn.id,
-                                            "status",
-                                            e.target.value,
-                                          )
-                                        }
-                                        onBlur={() => setEditingId(null)}
-                                        className="w-14 bg-white dark:bg-[#1C1C1E] border border-[#007AFF] rounded px-0 py-0 text-[9px] outline-none text-[#1D1D1F] dark:text-white pointer-events-auto"
-                                      >
-                                        {[
-                                          "Leads",
-                                          "NBO",
-                                          "DIN",
-                                          "DFIN",
-                                          "DWIN",
-                                        ].map((s) => (
-                                          <option key={s} value={s} className="dark:bg-[#1C1C1E]">
-                                            {s}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    ) : (
-                                      <span
-                                        className={cn(
-                                          "text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 cursor-pointer hover:opacity-80 transition-opacity pointer-events-auto",
-                                          pn.status === "DWIN"
-                                            ? "bg-[#34C759]/10 text-[#34C759]"
-                                            : pn.status === "DLOST"
-                                              ? "bg-[#FF3B30]/10 text-[#FF3B30]"
-                                              : "bg-[#007AFF]/10 text-[#007AFF]",
-                                        )}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setEditingId(`${pn.id}_status`);
-                                        }}
-                                      >
-                                        {pn.status || "NBO"}
-                                      </span>
-                                    )}
+                                    {/* Status Badge with Dropdown Picker */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setStatusPicker((prev) =>
+                                          prev?.pnId === pn.id
+                                            ? null
+                                            : {
+                                                pnId: pn.id,
+                                                top: rect.bottom + 4,
+                                                left: rect.left,
+                                                currentStatus: pn.status || "NBO",
+                                              }
+                                        );
+                                      }}
+                                      className={cn(
+                                        "text-[10px] px-2 py-0.5 rounded-lg font-bold shrink-0 cursor-pointer transition-all duration-150 pointer-events-auto flex items-center gap-1 border select-none",
+                                        pn.status === "DWIN"
+                                          ? "bg-[#34C759]/15 text-[#34C759] border-[#34C759]/30 hover:bg-[#34C759]/25 hover:border-[#34C759]/50"
+                                          : pn.status === "DLOST"
+                                            ? "bg-[#FF3B30]/15 text-[#FF3B30] border-[#FF3B30]/30 hover:bg-[#FF3B30]/25 hover:border-[#FF3B30]/50"
+                                            : pn.status === "DFIN"
+                                              ? "bg-[#AF52DE]/15 text-[#AF52DE] border-[#AF52DE]/30 hover:bg-[#AF52DE]/25 hover:border-[#AF52DE]/50"
+                                              : pn.status === "DIN"
+                                                ? "bg-[#007AFF]/15 text-[#60A5FA] border-[#007AFF]/40 hover:bg-[#007AFF]/25 hover:border-[#007AFF]/60"
+                                                : pn.status === "Leads"
+                                                  ? "bg-slate-400/15 text-slate-300 border-slate-400/30 hover:bg-slate-400/25 hover:border-slate-400/50"
+                                                  : "bg-[#FF9500]/15 text-[#FF9500] border-[#FF9500]/30 hover:bg-[#FF9500]/25 hover:border-[#FF9500]/50",
+                                        statusPicker?.pnId === pn.id && "ring-2 ring-[#007AFF]/60 shadow-sm"
+                                      )}
+                                      title="点击切换料号状态/阶段"
+                                    >
+                                      <span>{pn.status || "NBO"}</span>
+                                      <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150 opacity-80", statusPicker?.pnId === pn.id && "rotate-180")} />
+                                    </button>
                                   </div>
 
                                   <div 
@@ -2317,7 +2571,7 @@ export default function App() {
                                         e.stopPropagation();
                                         addTask(customer.id, project.id, pn.id);
                                       }}
-                                      className="p-1.5 text-[#8E8E93] hover:text-[#007AFF] dark:hover:text-[#0A84FF] hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/10 rounded-lg"
+                                      className="p-1.5 text-white/70 hover:text-[var(--accent-hover-color,#FFFFFF)] hover:bg-[var(--accent-subtle-bg,rgba(255,255,255,0.1))] rounded-lg"
                                       title="添加任务"
                                     >
                                       <Plus className="w-3 h-3" />
@@ -2327,7 +2581,7 @@ export default function App() {
                                         e.stopPropagation();
                                         deletePN(customer.id, project.id, pn.id);
                                       }}
-                                      className="p-1.5 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
+                                      className="p-1.5 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-lg"
                                       title="删除PN"
                                     >
                                       <Trash2 className="w-3 h-3" />
@@ -2341,7 +2595,7 @@ export default function App() {
                                     {(pn.tasks || []).map((task) => (
                                       <div
                                         key={task.id}
-                                        className="group flex items-center gap-2.5 pl-9 pr-3 border-b border-transparent rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors cursor-pointer h-8 shrink-0 select-none"
+                                        className="group flex items-center gap-2.5 pl-9 pr-3 border-b border-white/15 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors cursor-pointer h-8 shrink-0 select-none"
                                         onClick={() => {
                                           setSelectedTaskContext({
                                             task,
@@ -2358,14 +2612,14 @@ export default function App() {
                                             getStatusColor(task.status),
                                           )}
                                         />
-                                        <span className="flex-1 text-xs font-semibold text-[#8E8E93] dark:text-gray-400 truncate">
+                                        <span className="flex-1 text-xs font-semibold text-white truncate glass-sub-text">
                                           {renderHighlight(task.name, searchQuery)}
                                         </span>
                                         <div 
                                           className="opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex items-center gap-1 z-10"
                                         >
-                                          <User className="w-3 h-3 text-[#8E8E93]" />
-                                          <span className="text-[10px] font-bold text-[#8E8E93]">
+                                          <User className="w-3 h-3 text-white/80" />
+                                          <span className="text-[10px] font-bold text-white/80 glass-sub-text">
                                             {renderHighlight(task.owner, searchQuery)}
                                           </span>
                                           <button
@@ -2378,7 +2632,7 @@ export default function App() {
                                                 task.id,
                                               );
                                             }}
-                                            className="p-1 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded ml-1"
+                                            className="p-1 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded ml-1"
                                             title="删除任务"
                                           >
                                             <Trash2 className="w-2.5 h-2.5" />
@@ -2405,9 +2659,9 @@ export default function App() {
 
         {/* Gantt Timeline */}
         {displayMode === "gantt" && (
-        <div className="flex-1 apple-card flex flex-col overflow-hidden">
+        <div className="flex-1 apple-card flex flex-col overflow-hidden select-none cursor-default">
           {/* Timeline Header */}
-          <div className="h-[72px] border-b border-black/5 dark:border-white/5 flex shrink-0 bg-white/50 dark:bg-[#1C1C1E]/50 backdrop-blur-md z-20 overflow-hidden" ref={headerRef}>
+          <div className="h-[72px] border-b border-black/[0.03] dark:border-white/[0.03] flex shrink-0 bg-white/[0.03] dark:bg-white/[0.02] backdrop-blur-md z-20 overflow-hidden select-none" ref={headerRef}>
             <div
               className="flex relative"
               style={{ width: timelineHeaders.length * columnWidth }}
@@ -2422,21 +2676,21 @@ export default function App() {
                   <div
                     key={i}
                     className={cn(
-                      "border-r border-black/5 dark:border-white/5 flex flex-col items-center justify-center shrink-0 h-full transition-colors",
+                      "border-r border-white/10 flex flex-col items-center justify-center shrink-0 h-full transition-colors",
                       isWeekend && "bg-black/[0.015] dark:bg-white/[0.01]"
                     )}
                     style={{ width: columnWidth }}
                   >
                     <span className={cn(
-                      "text-[10px] font-bold transition-colors",
-                      isWeekend ? "text-[#FF3B30] dark:text-[#FF453A]" : "text-[#8E8E93] dark:text-[#98989D]"
+                      "text-[10px] font-bold transition-colors glass-sub-text",
+                      isWeekend ? "text-[#FF3B30] dark:text-[#FF453A]" : "text-white"
                     )}>
                       {header.label}
                     </span>
                     {viewMode === "day" && header.date && (
                       <span className={cn(
                         "text-[8px] font-semibold mt-0.5",
-                        isWeekend ? "text-[#FF3B30]/70 dark:text-[#FF453A]/70" : "text-[#8E8E93]/60 dark:text-[#98989D]/60"
+                        isWeekend ? "text-[#FF3B30]/70 dark:text-[#FF453A]/70" : "text-white/70/60 dark:text-[#98989D]/60"
                       )}>
                         {["日", "一", "二", "三", "四", "五", "六"][header.date.getDay()]}
                       </span>
@@ -2446,10 +2700,10 @@ export default function App() {
               })}
               {/* Current Marker Header */}
               <div
-                className="absolute top-0 bottom-0 w-px bg-[#FF3B30] z-30 flex flex-col items-center"
+                className="absolute top-0 bottom-0 w-px bg-[#FF3B30]/80 z-30 flex flex-col items-center pointer-events-none"
                 style={{ left: getCurrentMarkerPos() }}
               >
-                <div className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-b-lg whitespace-nowrap font-bold shadow-md shadow-red-500/20">
+                <div className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-b-md whitespace-nowrap font-bold shadow-[0_2px_4px_rgba(255,59,48,0.2)]">
                   今天
                 </div>
               </div>
@@ -2573,7 +2827,7 @@ export default function App() {
                                                   "absolute top-1.5 bottom-1.5 rounded-full shadow-sm cursor-pointer flex items-center px-3 task-bar-transition hover:shadow-lg hover:brightness-105 active:scale-[0.99] z-10",
                                                   getStatusColor(currentTask.status),
                                                   currentTask.status === "waiting"
-                                                    ? "text-[#1D1D1F] dark:text-white"
+                                                    ? "text-white"
                                                     : "text-white",
                                                 )}
                                                 style={{
@@ -2759,13 +3013,19 @@ export default function App() {
         />
       )}
 
-      {addPNModalData && (
-        <AddPNModal
-          customers={customers}
-          onClose={() => setAddPNModalData(null)}
-          onSave={handleAddPNSubmit}
-        />
-      )}
+      {addPNModalData && (() => {
+        const currentCustomer = customers.find(c => c.id === addPNModalData.customerId);
+        const currentProject = currentCustomer?.projects.find(p => p.id === addPNModalData.projectId);
+        return (
+          <AddPNModal
+            customers={customers}
+            customer={currentCustomer}
+            project={currentProject}
+            onClose={() => setAddPNModalData(null)}
+            onSave={handleAddPNSubmit}
+          />
+        );
+      })()}
 
       {editPNModalData && (() => {
         const currentCustomer = customers.find(c => c.id === editPNModalData.customerId);
@@ -2816,22 +3076,22 @@ export default function App() {
       {/* Clear All Confirm Modal */}
       <AnimatePresence>
         {showClearConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[3px]">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl p-6 w-[320px] flex flex-col gap-4"
+              className="macos-glass-modal rounded-2xl shadow-2xl p-6 w-[340px] flex flex-col gap-4"
             >
-              <div className="flex items-center gap-3 text-[#FF3B30]">
+              <div className="flex items-center gap-3 text-[#FF453A]">
                 <AlertCircle className="w-6 h-6" />
-                <h3 className="text-lg font-bold">清空所有数据</h3>
+                <h3 className="text-lg font-bold text-white">清空所有数据</h3>
               </div>
-              <p className="text-sm text-[#424245] dark:text-[#98989D]">确定要删除所有客户和项目数据吗？此操作无法撤销。</p>
-              <div className="flex justify-end gap-2 mt-2">
+              <p className="text-sm text-white/80 leading-relaxed">确定要删除所有客户和项目数据吗？此操作无法撤销。</p>
+              <div className="flex justify-end gap-2.5 mt-2">
                 <button
                   onClick={() => setShowClearConfirm(false)}
-                  className="px-4 py-2 text-sm font-medium text-[#424245] dark:text-[#98989D] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 rounded-xl transition-colors"
                 >
                   取消
                 </button>
@@ -2840,7 +3100,7 @@ export default function App() {
                     setCustomers([]);
                     setShowClearConfirm(false);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF3B30] hover:bg-[#FF3B30]/90 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF3B30] hover:bg-[#FF3B30]/90 rounded-xl transition-colors shadow-sm"
                 >
                   确定删除
                 </button>
@@ -2865,6 +3125,76 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* 全局甘特图 PN 状态快捷切换浮层（使用 fixed 彻底避免父级 overflow 截断与失焦失效） */}
+      <AnimatePresence>
+        {statusPicker && (
+          <div
+            className="fixed inset-0 z-[9999]"
+            onClick={(e) => {
+              e.stopPropagation();
+              setStatusPicker(null);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setStatusPicker(null);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              style={{
+                position: "fixed",
+                top: Math.min(statusPicker.top, window.innerHeight - 255),
+                left: Math.max(10, Math.min(statusPicker.left, window.innerWidth - 190)),
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-44 bg-[#121927]/95 dark:bg-[#0D131F]/95 backdrop-blur-2xl border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.65)] rounded-2xl p-1.5 flex flex-col gap-1 z-[10000]"
+            >
+              <div className="px-2 py-1 text-[10px] font-semibold text-white/50 uppercase tracking-wider border-b border-white/10 mb-0.5 select-none">
+                修改料号状态 / 阶段
+              </div>
+              {[
+                { value: "Leads", label: "Leads", desc: "线索对接", color: "bg-slate-400 text-slate-100" },
+                { value: "NBO", label: "NBO", desc: "新建商机", color: "bg-amber-500 text-amber-100" },
+                { value: "DIN", label: "DIN", desc: "设计导入中", color: "bg-blue-500 text-blue-100" },
+                { value: "DFIN", label: "DFIN", desc: "设计完成", color: "bg-purple-500 text-purple-100" },
+                { value: "DWIN", label: "DWIN", desc: "赢得设计", color: "bg-emerald-500 text-emerald-100" },
+                { value: "DLOST", label: "DLOST", desc: "丢单流失", color: "bg-rose-500 text-rose-100" },
+              ].map((opt) => {
+                const isSelected = statusPicker.currentStatus === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updatePNField(statusPicker.pnId, "status", opt.value);
+                      setStatusPicker(null);
+                    }}
+                    className={cn(
+                      "w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-all cursor-pointer select-none",
+                      isSelected
+                        ? "bg-[#007AFF] text-white shadow-sm font-semibold"
+                        : "text-white/85 hover:text-white hover:bg-white/15 active:bg-white/20"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0", opt.color)}>
+                        {opt.label}
+                      </span>
+                      <span className="text-[11px] text-white/70">{opt.desc}</span>
+                    </div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white stroke-[2.5] shrink-0" />}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <OverviewModal
         isOpen={isOverviewOpen}

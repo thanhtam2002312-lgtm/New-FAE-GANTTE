@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, ChevronDown, Calendar, Plus, Trash2, CalendarDays, CheckCircle2, AlertTriangle, HelpCircle, ArrowRight } from 'lucide-react';
+import { X, ChevronDown, Calendar, Plus, Trash2, CalendarDays, CheckCircle2, AlertTriangle, HelpCircle, ArrowRight, DollarSign } from 'lucide-react';
 import { Customer, Project, PN, Task, TaskStatus, PNStatus } from '../types';
 import { normalizeDateStr } from '../utils/helpers';
+import { GlassSelect } from './GlassSelect';
 
 interface EditPNModalProps {
   customers: Customer[];
@@ -102,7 +103,7 @@ const AutocompleteInput = ({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">
+      <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">
         {label} {required && <span className="text-[#FF3B30]">*</span>}
       </label>
       <input
@@ -115,18 +116,18 @@ const AutocompleteInput = ({
         }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+        className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70"
         placeholder={placeholder}
       />
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-black/5 dark:border-white/5 rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.35)] max-h-48 overflow-y-auto py-1">
+        <div className="absolute z-50 w-full mt-1.5 bg-[#121927]/80 dark:bg-[#0D131F]/85 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] max-h-48 overflow-y-auto p-1 custom-scrollbar">
           {filteredOptions.map((opt, i) => (
             <div
               key={i}
-              className={`px-4 py-2.5 text-[14px] cursor-pointer transition-colors ${
+              className={`px-3 py-2 text-[14px] rounded-xl cursor-pointer transition-all ${
                 i === activeIndex
-                  ? 'bg-[#0071E3] text-white'
-                  : 'text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-[#0071E3] text-white shadow-sm font-semibold'
+                  : 'text-white/90 hover:text-white hover:bg-white/15'
               }`}
               onClick={() => {
                 onChange(opt);
@@ -166,7 +167,7 @@ const DateInput = ({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5 ml-1">
-        <label className="block text-[13px] font-medium text-[#8E8E93]">
+        <label className="block text-[13px] font-medium text-white/70">
           {label} {required && <span className="text-[#FF3B30]">*</span>}
         </label>
         <button
@@ -182,11 +183,11 @@ const DateInput = ({
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93] [color-scheme:light-dark]"
+          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none transition-all placeholder:text-white/70 [color-scheme:light-dark]"
           placeholder={placeholder}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-          <Calendar className="w-4 h-4 text-[#8E8E93]" />
+          <Calendar className="w-4 h-4 text-white/70" />
         </div>
       </div>
     </div>
@@ -327,7 +328,7 @@ export default function EditPNModal({
       productLine: productLine.trim(),
       status,
       drStatus,
-      marketSegment,
+      marketSegment: project.marketSegment || pn.marketSegment || marketSegment,
       socketCreateDate,
       socketTotalLtrAmt,
       channelOk,
@@ -337,27 +338,37 @@ export default function EditPNModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/20 backdrop-blur-md transition-all">
-      <div className="bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] w-full max-w-[95vw] lg:max-w-[85vw] xl:max-w-6xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20 dark:border-white/10">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/25 backdrop-blur-[3px] transition-all">
+      <div className="macos-glass-modal rounded-3xl w-full max-w-[95vw] lg:max-w-[85vw] xl:max-w-6xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 dark:border-white/5 bg-white/50 dark:bg-[#1C1C1E]/50 w-full shrink-0">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-white/[0.04] backdrop-blur-md w-full shrink-0">
           <div>
-            <h2 className="text-xl font-semibold text-[#1D1D1F] dark:text-white tracking-tight flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
               <span>料号及任务关联详情编辑</span>
-              <span className="text-sm font-normal text-[#8E8E93] bg-[#8E8E93]/10 px-2.5 py-1 rounded-md">
+              <span className="text-sm font-normal text-white/70 bg-[#8E8E93]/10 px-2.5 py-1 rounded-md">
                 {pn.name || '未命名料号'}
               </span>
             </h2>
-            <p className="text-xs text-[#8E8E93] mt-1.5 leading-normal">
-              隶属于 客户: <span className="font-semibold text-[#1D1D1F] dark:text-white">{customer.nameZh}</span> | 项目: <span className="font-semibold text-[#1D1D1F] dark:text-white">{project.name}</span>
+            <p className="text-xs text-white/70 mt-1.5 leading-normal flex items-center gap-2 flex-wrap">
+              <span>隶属于 客户: <span className="font-semibold text-white">{customer.nameZh}</span></span>
+              <span className="text-white/30">|</span>
+              <span>项目: <span className="font-semibold text-white">{project.name}</span></span>
+              {(project.marketSegment || pn.marketSegment) && (
+                <>
+                  <span className="text-white/30">|</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#0071E3]/20 border border-[#0071E3]/35 text-[#64B5F6] font-medium text-[11px]">
+                    市场: {project.marketSegment || pn.marketSegment}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-[#8E8E93]" />
+            <X className="w-5 h-5 text-white/70" />
           </button>
         </div>
 
@@ -365,101 +376,96 @@ export default function EditPNModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-7 custom-scrollbar">
           
           {/* Section 1: PN properties form details */}
-          <div className="bg-black/[0.01] dark:bg-white/[0.01] border border-black/5 dark:border-white/5 rounded-2xl p-6">
-            <h3 className="text-sm font-bold text-[#1D1D1F] dark:text-white border-b border-black/5 dark:border-white/5 pb-2.5 mb-4">
+          <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6">
+            <h3 className="text-sm font-bold text-white border-b border-white/10 pb-2.5 mb-4">
               料号 PN 基本信息
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
-              <AutocompleteInput
-                label="料号 PN"
-                value={name}
-                onChange={setName}
-                options={existingPartNumbers}
-                placeholder="必填"
-                required
-              />
+            <div className="space-y-4">
+              {/* Row 1: 料号 PN & 产品线 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AutocompleteInput
+                  label="料号 PN"
+                  value={name}
+                  onChange={setName}
+                  options={existingPartNumbers}
+                  placeholder="必填"
+                  required
+                />
 
-              <AutocompleteInput
-                label="产品线"
-                value={productLine}
-                onChange={setProductLine}
-                options={existingProductLines}
-                placeholder="输入或选择产品线"
-              />
-              <AutocompleteInput
-                label="市场 (Segment)"
-                value={marketSegment}
-                onChange={setMarketSegment}
-                options={existingMarketSegments}
-                placeholder="Market Segment"
-              />
+                <AutocompleteInput
+                  label="产品线"
+                  value={productLine}
+                  onChange={setProductLine}
+                  options={existingProductLines}
+                  placeholder="输入或选择产品线"
+                />
+              </div>
 
-              <div>
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">PN 状态</label>
-                <div className="relative">
-                  <select
+              {/* Row 2: 状态与渠道 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">PN 状态</label>
+                  <GlassSelect
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as PNStatus)}
-                    className="w-full appearance-none bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-4 pr-10 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-                  >
-                    {['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST'].map(st => (
-                      <option key={st} value={st} className="bg-white dark:bg-[#1C1C1E]">{st}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93] pointer-events-none" />
+                    onChange={(val) => setStatus(val as PNStatus)}
+                    options={['Leads', 'NBO', 'DIN', 'DFIN', 'DWIN', 'DLOST']}
+                    className="w-full !bg-white/10 !border-white/15 !py-2.5 !px-3.5 !rounded-xl text-[14px]"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">DR 状态</label>
-                <input
-                  type="text"
-                  value={drStatus}
-                  onChange={(e) => setDrStatus(e.target.value)}
-                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
-                  placeholder="如 DR0, DR1"
-                />
-              </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">DR 状态</label>
+                  <input
+                    type="text"
+                    value={drStatus}
+                    onChange={(e) => setDrStatus(e.target.value)}
+                    className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3.5 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40"
+                    placeholder="如 DR0, DR1, DR2"
+                  />
+                </div>
 
-              <DateInput
-                label="Socket 创建日期"
-                value={socketCreateDate}
-                onChange={setSocketCreateDate}
-              />
-
-              <div>
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">Socket 总 LTR 金额</label>
-                <input
-                  type="text"
-                  value={socketTotalLtrAmt}
-                  onChange={(e) => setSocketTotalLtrAmt(e.target.value)}
-                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
-                  placeholder="金额如 $10,000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">渠道是否 OK</label>
-                <div className="relative">
-                  <select
+                <div>
+                  <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">渠道是否 OK</label>
+                  <GlassSelect
                     value={channelOk}
-                    onChange={(e) => setChannelOk(e.target.value as 'Yes' | 'No')}
-                    className="w-full appearance-none bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-4 pr-10 py-2.5 text-[15px] text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-                  >
-                    <option value="Yes" className="bg-white dark:bg-[#1C1C1E]">Yes</option>
-                    <option value="No" className="bg-white dark:bg-[#1C1C1E]">No</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93] pointer-events-none" />
+                    onChange={(val) => setChannelOk(val as 'Yes' | 'No')}
+                    options={['Yes', 'No']}
+                    className="w-full !bg-white/10 !border-white/15 !py-2.5 !px-3.5 !rounded-xl text-[14px]"
+                  />
                 </div>
               </div>
 
-              <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                <label className="block text-[13px] font-medium text-[#8E8E93] mb-1.5 ml-1">Remark (备注/修饰符)</label>
+              {/* Row 3: Socket 金额 & 创建日期 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">Socket 总 LTR 金额</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={socketTotalLtrAmt}
+                      onChange={(e) => setSocketTotalLtrAmt(e.target.value)}
+                      className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-9 pr-4 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40"
+                      placeholder="金额如 $10,000 或 500K"
+                    />
+                    <DollarSign className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                <DateInput
+                  label="Socket 创建日期"
+                  value={socketCreateDate}
+                  onChange={setSocketCreateDate}
+                />
+              </div>
+
+              {/* Row 4: Remark */}
+              <div>
+                <label className="block text-[13px] font-medium text-white/70 mb-1.5 ml-1">Remark (备注/修饰符)</label>
                 <textarea
                   value={remark}
                   onChange={(e) => setRemark(e.target.value)}
-                  className="w-full h-16 bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[14px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93] resize-none"
+                  className="w-full h-20 bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-4 py-2.5 text-[14px] text-white outline-none transition-all placeholder:text-white/40 resize-none leading-relaxed"
                   placeholder="填写料号其他备注信息..."
                 />
               </div>
@@ -468,12 +474,12 @@ export default function EditPNModal({
 
           {/* Section 2: Tasks list details */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-2.5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
               <div>
-                <h3 className="text-sm font-bold text-[#1D1D1F] dark:text-white">
+                <h3 className="text-sm font-bold text-white">
                   该料号下的关联任务详情
                 </h3>
-                <p className="text-[12px] text-[#8E8E93] mt-0.5">列出并管理该料号涉及的所有甘特图任务详情</p>
+                <p className="text-[12px] text-white/70 mt-0.5">列出并管理该料号涉及的所有甘特图任务详情</p>
               </div>
               <button
                 type="button"
@@ -486,7 +492,7 @@ export default function EditPNModal({
             </div>
 
             {localTasks.length === 0 ? (
-              <div className="text-center py-12 bg-black/[0.01] dark:bg-white/[0.01] rounded-2xl border border-dashed border-black/10 dark:border-white/10 text-sm text-[#8E8E93] flex flex-col items-center justify-center gap-2">
+              <div className="text-center py-12 bg-white/[0.03] rounded-2xl border border-dashed border-white/15 text-sm text-white/70 flex flex-col items-center justify-center gap-2">
                 <CalendarDays className="w-8 h-8 text-[#C7C7CC] mb-1" />
                 <p>该料号目前没有任何关联任务。</p>
                 <button
@@ -498,9 +504,9 @@ export default function EditPNModal({
                 </button>
               </div>
             ) : (
-              <div className="border border-black/5 dark:border-white/5 rounded-2xl overflow-hidden bg-black/[0.01] dark:bg-white/[0.01]">
+              <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.03]">
                 {/* List Header */}
-                <div className="grid grid-cols-[1.5fr_1fr_120px_130px_130px_45px] gap-3 px-4 py-3 border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider select-none">
+                <div className="grid grid-cols-[1.5fr_1fr_120px_130px_130px_45px] gap-3 px-4 py-3 border-b border-white/10 bg-white/[0.05] text-[12px] font-semibold text-white/70 uppercase tracking-wider select-none">
                   <div>任务名称 <span className="text-[#FF3B30]">*</span></div>
                   <div>负责人</div>
                   <div>状态</div>
@@ -510,7 +516,7 @@ export default function EditPNModal({
                 </div>
 
                 {/* List Body */}
-                <div className="divide-y divide-black/5 dark:divide-white/5 bg-white/30 dark:bg-black/10">
+                <div className="divide-y divide-white/10 bg-transparent">
                   {localTasks.map((task, index) => (
                     <div 
                       key={task.id} 
@@ -522,7 +528,7 @@ export default function EditPNModal({
                           type="text"
                           value={task.name}
                           onChange={(e) => handleUpdateTaskField(index, 'name', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-white outline-none transition-all placeholder:text-white/70"
                           placeholder="如: Socket板图设计"
                           required
                         />
@@ -534,26 +540,25 @@ export default function EditPNModal({
                           type="text"
                           value={task.owner}
                           onChange={(e) => handleUpdateTaskField(index, 'owner', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all placeholder:text-[#8E8E93]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-2 text-[13px] text-white outline-none transition-all placeholder:text-white/70"
                           placeholder="姓名"
                         />
                       </div>
 
                       {/* 3. Task Status Selector */}
                       <div>
-                        <div className="relative">
-                          <select
-                            value={task.status}
-                            onChange={(e) => handleUpdateTaskField(index, 'status', e.target.value as TaskStatus)}
-                            className="w-full appearance-none bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl pl-3 pr-8 py-2 text-[13px] font-medium text-[#1D1D1F] dark:text-white outline-none transition-all cursor-pointer"
-                          >
-                            <option value="standard" className="text-[#0071E3]">正常</option>
-                            <option value="risk" className="text-[#FF3B30] font-semibold">⚠️ 风险</option>
-                            <option value="done" className="text-[#34C759]">✅ 完成</option>
-                            <option value="waiting" className="text-[#8E8E93]">等待</option>
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8E8E93] pointer-events-none" />
-                        </div>
+                        <GlassSelect
+                          value={task.status}
+                          onChange={(val) => handleUpdateTaskField(index, 'status', val as TaskStatus)}
+                          options={[
+                            { value: "standard", label: "正常" },
+                            { value: "risk", label: "⚠️ 风险" },
+                            { value: "done", label: "✅ 完成" },
+                            { value: "waiting", label: "等待" },
+                          ]}
+                          size="xs"
+                          className="w-full !bg-white/10 !border-white/15 !py-2 !px-3 !rounded-xl text-[13px]"
+                        />
                       </div>
 
                       {/* 4. Start Date Picker */}
@@ -562,7 +567,7 @@ export default function EditPNModal({
                           type="date"
                           value={task.startDate}
                           onChange={(e) => handleUpdateTaskField(index, 'startDate', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-1.5 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all [color-scheme:light-dark]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-1.5 text-[13px] text-white outline-none transition-all [color-scheme:light-dark]"
                         />
                       </div>
 
@@ -572,7 +577,7 @@ export default function EditPNModal({
                           type="date"
                           value={task.endDate}
                           onChange={(e) => handleUpdateTaskField(index, 'endDate', e.target.value)}
-                          className="w-full bg-black/[0.03] dark:bg-white/5 border border-transparent focus:border-[#0071E3]/30 focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-1.5 text-[13px] text-[#1D1D1F] dark:text-white outline-none transition-all [color-scheme:light-dark]"
+                          className="w-full bg-white/10 border border-white/15 focus:border-[#0071E3]/30 focus:bg-white/15 focus:ring-4 focus:ring-[#0071E3]/10 rounded-xl px-3 py-1.5 text-[13px] text-white outline-none transition-all [color-scheme:light-dark]"
                         />
                       </div>
 
@@ -581,7 +586,7 @@ export default function EditPNModal({
                         <button
                           type="button"
                           onClick={() => handleRemoveTask(index)}
-                          className="p-2 text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-xl transition-all"
+                          className="p-2 text-white/70 hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 rounded-xl transition-all"
                           title="删除此任务"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -595,11 +600,11 @@ export default function EditPNModal({
           </div>
 
           {/* Footer controls */}
-          <div className="flex justify-end gap-3 pt-5 border-t border-black/5 dark:border-white/5">
+          <div className="flex justify-end gap-3 pt-5 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="px-6 py-2.5 rounded-xl text-[15px] font-medium text-white hover:bg-white/10 transition-colors"
             >
               取消
             </button>

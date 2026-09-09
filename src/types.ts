@@ -28,6 +28,7 @@ export interface PN {
   channelOk?: "Yes" | "No";
   remark?: string;
   marketSegment?: string;
+  updated?: string;
   rawData?: any;
   createdAt?: number;
   updatedAt?: number;
@@ -37,6 +38,12 @@ export interface Project {
   id: string;
   name: string;
   mpSchedule?: string;
+  marketSegment?: string;
+  ltrAmt?: string;
+  ownerName?: string;
+  ownerTitle?: string;
+  ownerPhone?: string;
+  ownerEmail?: string;
   pns: PN[];
   createdAt?: number;
   updatedAt?: number;

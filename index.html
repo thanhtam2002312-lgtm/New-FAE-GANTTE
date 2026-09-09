@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FAE Project Gantt</title>
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      (function() {
+        try {
+          var accents = {
+            white: { color: "#FFFFFF", hover: "#FFFFFF", subtle: "rgba(255, 255, 255, 0.18)", border: "rgba(255, 255, 255, 0.45)", glow: "0 0 14px rgba(255, 255, 255, 0.45)" },
+            gold: { color: "#F59E0B", hover: "#FDE68A", subtle: "rgba(245, 158, 11, 0.16)", border: "rgba(245, 158, 11, 0.45)", glow: "0 0 16px rgba(245, 158, 11, 0.45)" },
+            mint: { color: "#10B981", hover: "#6EE7B7", subtle: "rgba(16, 185, 129, 0.16)", border: "rgba(16, 185, 129, 0.45)", glow: "0 0 16px rgba(16, 185, 129, 0.45)" },
+            violet: { color: "#A855F7", hover: "#E9D5FF", subtle: "rgba(168, 85, 247, 0.16)", border: "rgba(168, 85, 247, 0.45)", glow: "0 0 16px rgba(168, 85, 247, 0.45)" },
+            cyan: { color: "#38BDF8", hover: "#BAE6FD", subtle: "rgba(56, 189, 248, 0.16)", border: "rgba(56, 189, 248, 0.45)", glow: "0 0 16px rgba(56, 189, 248, 0.45)" },
+            rose: { color: "#FB7185", hover: "#FECDD3", subtle: "rgba(251, 113, 133, 0.16)", border: "rgba(251, 113, 133, 0.45)", glow: "0 0 16px rgba(251, 113, 133, 0.45)" }
+          };
+          var id = localStorage.getItem("macos_accent_color") || "white";
+          var c = accents[id] || accents.white;
+          document.documentElement.style.setProperty("--accent-color", c.color);
+          document.documentElement.style.setProperty("--accent-hover-color", c.hover);
+          document.documentElement.style.setProperty("--accent-subtle-bg", c.subtle);
+          document.documentElement.style.setProperty("--accent-border", c.border);
+          document.documentElement.style.setProperty("--accent-glow", c.glow);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

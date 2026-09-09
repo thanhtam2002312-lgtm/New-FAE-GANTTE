@@ -10,11 +10,26 @@
 
 @layer base {
   body {
-    @apply bg-[#F5F5F7] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] antialiased transition-colors duration-300;
+    @apply bg-[#ECEEF2] dark:bg-[#0A0B0E] text-white antialiased transition-colors duration-300 selection:bg-[#007AFF]/25 selection:text-white;
   }
   .dark {
     color-scheme: dark;
   }
+  select {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: #1A1E29 !important;
+    color: #FFFFFF !important;
+  }
+}
+
+/* App drag region */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* Apple Style Scrollbar */
@@ -26,6 +41,17 @@
 .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+.table-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.table-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar {
@@ -49,8 +75,150 @@
   background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 }
 
-.apple-card {
-  @apply bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] rounded-2xl;
+/* ==========================================================================
+   Ultra-Clear Glassmorphism (90% - 95% Transparency)
+   - 90%~95% ultra transparent background: rgba(255, 255, 255, 0.06) - 0.1
+   - backdrop-filter: blur(20px)
+   - ultra-delicate crystalline border: 1px solid rgba(255, 255, 255, 0.28)
+   - inset highlight: rgba(255, 255, 255, 0.45) for crisp specular rim
+   - soft atmospheric drop shadow
+   ========================================================================== */
+
+:root {
+  --glass-transparency: 0.025; /* 97.5% ultra-crystal clear */
+  --glass-transparency-dark: 0.04; /* 96% ultra-crystal clear dark */
+  --glass-blur: 8px; /* Crystal glass clarity without muddy haze */
+  --text-shield-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 5px rgba(0, 0, 0, 0.85);
+
+  /* Dynamic Accent Color Theme (Default: Pure Luminescent White) */
+  --accent-color: #FFFFFF;
+  --accent-hover-color: #FFFFFF;
+  --accent-subtle-bg: rgba(255, 255, 255, 0.16);
+  --accent-border: rgba(255, 255, 255, 0.4);
+  --accent-glow: 0 0 14px rgba(255, 255, 255, 0.45);
+}
+
+/* Dynamic Accent Helper Utilities */
+.accent-color-text {
+  color: var(--accent-color) !important;
+}
+.accent-hover-color-text:hover {
+  color: var(--accent-hover-color) !important;
+}
+.accent-color-bg {
+  background-color: var(--accent-color) !important;
+}
+.accent-color-border {
+  border-color: var(--accent-border) !important;
+}
+
+.dark {
+  --text-shield-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.85);
+}
+
+/* Crystal Text Legibility Shield: ensures razor-sharp reading across complex wallpaper backgrounds */
+.glass-text-shield,
+.glass-panel,
+.apple-card,
+.macos-glass-panel {
+  text-rendering: optimizeLegibility;
+  color: #FFFFFF;
+}
+
+.glass-title-text {
+  color: #FFFFFF !important;
+  text-shadow: var(--text-shield-shadow);
+}
+
+.glass-sub-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: var(--text-shield-shadow);
+}
+
+/* Global table & card inputs: force crystal clear white text with subtle shadow */
+.apple-card input,
+.apple-card select,
+.apple-card textarea,
+.glass-panel input,
+.glass-panel select,
+.glass-panel textarea {
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.glass-panel, .glassmorphism-panel, .apple-card, .macos-glass-panel, .real-glass-panel {
+  background: rgba(255, 255, 255, var(--glass-transparency, 0.025));
+  backdrop-filter: blur(var(--glass-blur, 8px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 8px));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+  border-radius: 1.25rem;
+}
+
+.dark .glass-panel, .dark .glassmorphism-panel, .dark .apple-card, .dark .macos-glass-panel, .dark .real-glass-panel {
+  background: rgba(12, 16, 22, var(--glass-transparency-dark, 0.04));
+  backdrop-filter: blur(var(--glass-blur, 8px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 8px));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 20px 48px 0 rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+}
+
+.glass-nav, .real-glass-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, var(--glass-transparency, 0.025));
+  backdrop-filter: blur(var(--glass-blur, 8px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 8px));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass-nav, .dark .real-glass-nav {
+  background: rgba(12, 16, 22, var(--glass-transparency-dark, 0.04));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+}
+
+.macos-glass-pill, .real-glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 4px 12px 0 rgba(0, 0, 0, 0.04), 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.dark .macos-glass-pill, .dark .real-glass-pill {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 4px 12px 0 rgba(0, 0, 0, 0.2), 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.macos-glass-modal, .real-glass-modal {
+  background: rgba(16, 22, 34, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 24px 60px 0 rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.dark .macos-glass-modal, .dark .real-glass-modal {
+  background: rgba(10, 15, 25, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 
+    0 28px 70px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .apple-button-base {
@@ -58,21 +226,70 @@
 }
 
 .apple-button-primary {
-  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-sm;
+  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 text-white shadow-sm;
+  background: linear-gradient(180deg, #0A84FF 0%, #0066D6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 3px 12px rgba(0, 113, 227, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
 }
 
 .apple-button-secondary {
-  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-white hover:bg-black/10 dark:hover:bg-white/20;
+  @apply px-4 py-2 rounded-full font-medium transition-all active:scale-95 disabled:opacity-50 text-white;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.dark .apple-button-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .apple-input {
-  @apply w-full px-4 py-2.5 bg-black/[0.03] dark:bg-white/5 border-none rounded-xl focus:ring-2 focus:ring-[#0071E3]/30 outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30 text-[#1D1D1F] dark:text-white;
+  @apply w-full px-4 py-2.5 rounded-xl outline-none transition-all placeholder:text-white/40 text-white;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.apple-input:focus {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dark .apple-input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .apple-input:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .task-bar-transition {
   transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-.glass-nav {
-  @apply sticky top-0 z-50 bg-white/70 dark:bg-[#1C1C1E]/70 backdrop-blur-xl border-b border-black/5 dark:border-white/5;
+/* macOS 26 Window Controls */
+.macos-traffic-red {
+  background: linear-gradient(180deg, #FF6058 0%, #FF544D 100%);
+  border: 1px solid #E1443D;
+  box-shadow: 0 1px 3px rgba(255, 96, 88, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
 }
+.macos-traffic-yellow {
+  background: linear-gradient(180deg, #FFBD2E 0%, #FFB61E 100%);
+  border: 1px solid #DEA123;
+  box-shadow: 0 1px 3px rgba(255, 189, 46, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+.macos-traffic-green {
+  background: linear-gradient(180deg, #28C840 0%, #24BD3A 100%);
+  border: 1px solid #1BA62F;
+  box-shadow: 0 1px 3px rgba(40, 200, 64, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+

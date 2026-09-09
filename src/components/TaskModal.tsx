@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, User, Calendar, Clock, Trash2, ChevronDown } from 'lucide-react';
 import { Task, TaskStatus } from '../types';
 import { cn } from '../utils/cn';
+import { GlassSelect } from './GlassSelect';
 
 interface TaskModalProps {
   task: Task;
@@ -38,15 +39,15 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/25 backdrop-blur-[3px]">
         <motion.div
            initial={{ opacity: 0, scale: 0.9, y: 20 }}
            animate={{ opacity: 1, scale: 1, y: 0 }}
            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-           className="bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-[28px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/40 dark:border-white/10"
+           className="macos-glass-modal rounded-[28px] shadow-2xl w-full max-w-lg overflow-hidden"
         >
           <div className="flex items-center justify-between p-6 pb-2">
-            <h2 className="text-2xl font-bold tracking-tight text-[#1D1D1F] dark:text-white flex items-center gap-3">
+            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
               <div className="p-2 bg-[#0071E3]/10 rounded-xl">
                 <Calendar className="w-6 h-6 text-[#0071E3]" />
               </div>
@@ -56,14 +57,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
               onClick={onClose}
               className="p-2 hover:bg-black/5 rounded-full transition-colors"
             >
-              <X className="w-5 h-5 text-[#8E8E93]" />
+              <X className="w-5 h-5 text-white/70" />
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-[13px] font-semibold text-[#8E8E93] mb-1.5 ml-1">任务名称</label>
+                <label className="block text-[13px] font-semibold text-white/70 mb-1.5 ml-1">任务名称</label>
                 <input
                   type="text"
                   value={editedTask.name}
@@ -76,9 +77,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#8E8E93] mb-1.5 ml-1">负责人</label>
+                  <label className="block text-[13px] font-semibold text-white/70 mb-1.5 ml-1">负责人</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                     <input
                       type="text"
                       value={editedTask.owner}
@@ -89,27 +90,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#8E8E93] mb-1.5 ml-1">状态</label>
-                  <div className="relative">
-                    <select
-                      value={editedTask.status}
-                      onChange={(e) => setEditedTask({ ...editedTask, status: e.target.value as TaskStatus })}
-                      className="apple-input appearance-none bg-black/[0.03] cursor-pointer !pr-10"
-                    >
-                      {statusOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93] pointer-events-none" />
-                  </div>
+                  <label className="block text-[13px] font-semibold text-white/70 mb-1.5 ml-1">状态</label>
+                  <GlassSelect
+                    value={editedTask.status}
+                    onChange={(val) => setEditedTask({ ...editedTask, status: val as TaskStatus })}
+                    options={statusOptions}
+                    className="w-full !bg-black/[0.03] dark:!bg-white/[0.06] hover:!bg-black/[0.06] dark:hover:!bg-white/[0.1] !border-white/10 !rounded-xl !py-2.5 !px-3.5 text-sm"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#8E8E93] mb-1.5 ml-1">开始日期</label>
+                  <label className="block text-[13px] font-semibold text-white/70 mb-1.5 ml-1">开始日期</label>
                   <input
                     type="date"
                     value={editedTask.startDate}
@@ -118,7 +111,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
                   />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#8E8E93] mb-1.5 ml-1">结束日期</label>
+                  <label className="block text-[13px] font-semibold text-white/70 mb-1.5 ml-1">结束日期</label>
                   <input
                     type="date"
                     value={editedTask.endDate}
@@ -141,7 +134,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectMpSchedule, isOpen, 
                   <textarea
                     value={editedTask.blocker || ''}
                     onChange={(e) => setEditedTask({ ...editedTask, blocker: e.target.value })}
-                    className="w-full p-3 text-sm rounded-xl border-none bg-white/50 dark:bg-[#1C1C1E]/50 focus:ring-2 focus:ring-[#FF3B30]/30 outline-none min-h-[80px] placeholder:text-[#FF3B30]/30 text-[#1D1D1F] dark:text-white"
+                    className="w-full p-3 text-sm rounded-xl border border-white/10 bg-white/[0.05] focus:ring-2 focus:ring-[#FF3B30]/30 outline-none min-h-[80px] placeholder:text-[#FF3B30]/40 text-white"
                     placeholder="描述当前遇到的问题..."
                   />
                 </motion.div>
