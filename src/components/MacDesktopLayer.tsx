@@ -432,10 +432,8 @@ export const MacDesktopLayer: React.FC<MacDesktopLayerProps> = ({
           backgroundColor: "#11141A"
         }}
       >
-        {/* Crisp Caustic Ambient Lighting */}
-        <div className="absolute inset-0 bg-black/[0.04] pointer-events-none" />
-        <div className="absolute top-0 left-1/4 w-[650px] h-[450px] rounded-full bg-white/[0.07] blur-[110px] transform -translate-y-1/2 pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[350px] rounded-full bg-white/[0.04] blur-[120px] transform translate-y-1/3 pointer-events-none" />
+        {/* Crisp Caustic Ambient Lighting - completely uniform */}
+        <div className="absolute inset-0 bg-black/[0.06] pointer-events-none" />
       </div>
 
       {/* 2. Wallpaper & Glass Customizer Modal */}

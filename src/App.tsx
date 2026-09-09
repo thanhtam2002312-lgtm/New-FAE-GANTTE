@@ -2661,7 +2661,7 @@ export default function App() {
         {displayMode === "gantt" && (
         <div className="flex-1 apple-card flex flex-col overflow-hidden select-none cursor-default">
           {/* Timeline Header */}
-          <div className="h-[72px] border-b border-black/[0.03] dark:border-white/[0.03] flex shrink-0 bg-white/[0.03] dark:bg-white/[0.02] backdrop-blur-md z-20 overflow-hidden select-none" ref={headerRef}>
+          <div className="h-[72px] border-b border-black/[0.03] dark:border-white/[0.03] flex shrink-0 bg-transparent z-20 overflow-hidden select-none" ref={headerRef}>
             <div
               className="flex relative"
               style={{ width: timelineHeaders.length * columnWidth }}
