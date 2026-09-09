@@ -8,9 +8,11 @@ const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === 'development';
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../public/app-icon.png');
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    icon: iconPath,
     titleBarStyle: 'hiddenInset', // Adds a nice native mac feel
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
