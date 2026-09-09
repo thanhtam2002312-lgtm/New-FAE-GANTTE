@@ -20,13 +20,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build Mac App
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run electron:build:mac
 
       - name: Upload Mac DMG Artifact
@@ -34,7 +37,7 @@ jobs:
         with:
           name: Mac-Application-DMG
           path: release/*.dmg
-          if-no-files-found: warn
+          if-no-files-found: error
 
   build-win:
     name: Build Windows (.exe)
@@ -46,13 +49,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build Windows App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run electron:build:win
 
       - name: Upload Windows EXE Artifact
@@ -60,4 +65,4 @@ jobs:
         with:
           name: Windows-Installer-EXE
           path: release/*.exe
-          if-no-files-found: warn
+          if-no-files-found: error

@@ -1,7 +1,9 @@
 {
-  "name": "react-example",
+  "name": "fae-dashboard",
   "private": true,
   "version": "1.0.0",
+  "description": "FAE Project Gantt and Engineering Management Dashboard",
+  "author": "FAE Team",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -12,9 +14,9 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "npm run build:electron && electron-builder",
-    "electron:build:mac": "npm run build:electron && electron-builder --mac",
-    "electron:build:win": "npm run build:electron && electron-builder --win",
+    "electron:build": "npm run build:electron && electron-builder --publish never",
+    "electron:build:mac": "npm run build:electron && electron-builder --mac --publish never",
+    "electron:build:win": "npm run build:electron && electron-builder --win --publish never",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
@@ -25,9 +27,11 @@
     "directories": {
       "output": "release"
     },
+    "publish": null,
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "build/icon.icns",
+      "identity": null,
       "target": [
         "dmg"
       ]
