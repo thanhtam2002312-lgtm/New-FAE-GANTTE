@@ -6,38 +6,43 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const isDesktop = process.env.ELECTRON_BUILD === 'true' || process.env.TAURI_BUILD === 'true';
+  const isDesktop = process.env.ELECTRON_BUILD === 'true' || 
+                    process.env.TAURI_BUILD === 'true' || 
+                    process.env.TAURI_ENV_PLATFORM !== undefined || 
+                    mode === 'desktop';
   return {
     base: isDesktop ? './' : '/',
     plugins: [
       react(), 
       tailwindcss(), 
-      VitePWA({ 
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
-        manifest: {
-          name: 'FAE Project Gantt',
-          short_name: 'FAE Gantt',
-          description: '专业的 Socket 项目进度管理系统，支持 Excel 导入导出及状态颜色标识。',
-          theme_color: '#ffffff',
-          icons: [
-            {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            }
-          ]
-        },
-        workbox: {
-          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,jpg,jpeg,webp}']
-        },
-      })
+      ...(!isDesktop ? [
+        VitePWA({ 
+          registerType: 'autoUpdate',
+          includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
+          manifest: {
+            name: 'FAE Project Gantt',
+            short_name: 'FAE Gantt',
+            description: '专业的 Socket 项目进度管理系统，支持 Excel 导入导出及状态颜色标识。',
+            theme_color: '#ffffff',
+            icons: [
+              {
+                src: 'pwa-192x192.png',
+                sizes: '192x192',
+                type: 'image/png'
+              },
+              {
+                src: 'pwa-512x512.png',
+                sizes: '512x512',
+                type: 'image/png'
+              }
+            ]
+          },
+          workbox: {
+            maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,json,jpg,jpeg,webp}']
+          },
+        })
+      ] : [])
     ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),

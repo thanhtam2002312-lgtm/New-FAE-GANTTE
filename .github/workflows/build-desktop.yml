@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-mac-tauri:
-    name: Build Mac (.dmg) - ~9MB Tauri
+    name: Build Mac (.dmg) - ~9MB Universal
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -23,24 +23,26 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Setup Rust
+      - name: Setup Rust (Universal: Apple Silicon & Intel)
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
 
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build Tauri Mac App (.dmg)
-        run: npm run tauri:build
+      - name: Build Tauri Mac App (Universal DMG)
+        run: npx tauri build --target universal-apple-darwin --bundles dmg
 
-      - name: Upload 9MB Mac DMG Artifact
+      - name: Upload Mac DMG Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FAE-Dashboard-Mac-Tauri-9MB-DMG
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          name: FAE-Dashboard-Mac-Universal-DMG
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
   build-win-tauri:
-    name: Build Windows (.exe) - ~5MB Tauri
+    name: Build Windows (.exe) - ~5MB NSIS
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -58,14 +60,12 @@ jobs:
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build Tauri Windows App
-        run: npm run tauri:build
+      - name: Build Tauri Windows App (.exe)
+        run: npx tauri build --bundles nsis
 
-      - name: Upload 5MB Windows Installer Artifact
+      - name: Upload Windows EXE Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FAE-Dashboard-Windows-Tauri-5MB-EXE
-          path: |
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
-          if-no-files-found: warn
+          name: FAE-Dashboard-Windows-EXE
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
