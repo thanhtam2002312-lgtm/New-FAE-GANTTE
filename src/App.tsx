@@ -64,6 +64,10 @@ const STORAGE_KEY = "fae_gantt_data_v3";
 const ALLOWED_USERNAME = "Roben";
 const ALLOWED_PASSWORD = "znuobin";
 
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+const isMacTauri = isTauri && isMac;
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("fae_is_logged_in") === "true" || sessionStorage.getItem("fae_is_logged_in") === "true";
@@ -1712,17 +1716,23 @@ export default function App() {
       />
 
       {/* Top Bar */}
-      <header className="relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20">
-        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10">
+      <header 
+        data-tauri-drag-region={isTauri ? "true" : undefined}
+        className={cn(
+          "relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20",
+          isMacTauri && "pl-20 md:pl-24"
+        )}
+      >
+        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="md:hidden p-2 text-white/75 hover:text-white rounded-lg transition-colors no-drag"
+            className="md:hidden p-2 text-white/75 hover:text-white rounded-lg transition-colors pointer-events-auto no-drag"
           >
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          <div className="flex items-center gap-3 md:gap-4 shrink-0">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-auto">
             <button 
               onClick={() => setIsOverviewOpen(true)}
               className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
@@ -1770,7 +1780,7 @@ export default function App() {
             <button
               onClick={() => setFilterRisk(!filterRisk)}
               className={cn(
-                "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95",
+                "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag",
                 filterRisk
                   ? "bg-red-500/25 text-red-100 border-red-500/40 font-bold"
                   : "bg-white/[0.08] hover:bg-white/[0.18] text-white/80 hover:text-white border-white/15 hover:border-white/25 font-semibold",
