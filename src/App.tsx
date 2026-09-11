@@ -70,12 +70,14 @@ const ALLOWED_PASSWORD = "znuobin";
 
 const isTauriEnv = () => {
   if (typeof window === 'undefined') return false;
-  return (
+  return Boolean(
     '__TAURI_INTERNALS__' in window || 
     '__TAURI__' in window || 
     'isTauri' in window || 
     typeof (window as any).isTauri === 'function' ||
-    Boolean((window as any).__TAURI_IPC__)
+    Boolean((window as any).__TAURI_IPC__) ||
+    window.location.protocol === 'tauri:' ||
+    window.location.hostname === 'tauri.localhost'
   );
 };
 const isMacPlatform = () => {
@@ -103,7 +105,24 @@ export default function App() {
     }
   }, []);
 
-  const isMacTauri = isTauriEnv() && isMacPlatform();
+  const [isMacTauri, setIsMacTauri] = useState(() => {
+    return isTauriEnv() && isMacPlatform();
+  });
+
+  useEffect(() => {
+    const checkTauri = () => {
+      if (isTauriEnv() && isMacPlatform()) {
+        setIsMacTauri(true);
+      }
+    };
+    checkTauri();
+    const t1 = setTimeout(checkTauri, 100);
+    const t2 = setTimeout(checkTauri, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("fae_is_logged_in") === "true" || sessionStorage.getItem("fae_is_logged_in") === "true";
@@ -1871,8 +1890,10 @@ export default function App() {
         onMouseDown={handleWindowDrag}
         onDoubleClick={handleHeaderDoubleClick}
         className={cn(
-          "relative glass-nav text-white h-[66px] md:h-[70px] px-3 sm:px-4 md:px-5 lg:px-6 flex items-center justify-between shrink-0 shadow-sm gap-1 sm:gap-2 z-20 select-none",
-          isMacTauri && "pl-[76px] sm:pl-[80px]"
+          "relative glass-nav text-white h-[66px] md:h-[70px] flex items-center justify-between shrink-0 shadow-sm gap-1 sm:gap-2 z-20 select-none",
+          isMacTauri
+            ? "pl-[84px] md:pl-[88px] pr-3 sm:pr-4 md:pr-5 lg:pr-6"
+            : "px-3 sm:px-4 md:px-5 lg:px-6"
         )}
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       >
