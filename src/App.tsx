@@ -103,7 +103,7 @@ export default function App() {
     }
   }, []);
 
-  const isMacTauri = isMacPlatform();
+  const isMacTauri = isTauriEnv() && isMacPlatform();
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("fae_is_logged_in") === "true" || sessionStorage.getItem("fae_is_logged_in") === "true";
@@ -1871,8 +1871,8 @@ export default function App() {
         onMouseDown={handleWindowDrag}
         onDoubleClick={handleHeaderDoubleClick}
         className={cn(
-          "relative glass-nav text-white h-[76px] md:h-[82px] pt-3 sm:pt-3.5 pb-2 px-3 sm:px-4 md:px-5 lg:px-6 flex items-center justify-between shrink-0 shadow-sm gap-1.5 sm:gap-2 md:gap-2.5 z-20 select-none",
-          isMacTauri ? "pl-[84px] sm:pl-[88px] md:pl-[92px]" : "pl-3 sm:pl-4"
+          "relative glass-nav text-white h-[66px] md:h-[70px] px-3 sm:px-4 md:px-5 lg:px-6 flex items-center justify-between shrink-0 shadow-sm gap-1 sm:gap-2 z-20 select-none",
+          isMacTauri && "pl-[76px] sm:pl-[80px]"
         )}
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       >
@@ -1880,7 +1880,7 @@ export default function App() {
         <div 
           data-tauri-drag-region
           onMouseDown={handleWindowDrag}
-          className="flex items-center gap-2 sm:gap-2.5 shrink-0 relative z-10"
+          className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-10"
         >
           {/* Mobile Menu Toggle */}
           <button
@@ -1888,9 +1888,9 @@ export default function App() {
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="md:hidden p-2 text-white/75 hover:text-white rounded-xl transition-colors no-drag cursor-pointer"
+            className="md:hidden h-8 w-8 flex items-center justify-center p-1.5 text-white/75 hover:text-white rounded-xl transition-colors no-drag cursor-pointer"
           >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
           {/* Overview Modal Button (Document squircle button) */}
@@ -1899,50 +1899,47 @@ export default function App() {
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => setIsOverviewOpen(true)}
-            className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-white/35 rounded-2xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
+            className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-white/35 rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
             title="查看数据概览"
           >
-            <FileText className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white transition-colors" />
+            <FileText className="w-4 h-4 text-white transition-colors" />
           </button>
 
           {/* App Title - Left Aligned */}
           <div 
             data-tauri-drag-region
             onMouseDown={handleWindowDrag}
-            className="shrink-0 flex flex-col justify-center items-start text-left cursor-default"
+            className="h-8 shrink-0 flex flex-col justify-center items-start text-left cursor-default select-none"
           >
             <span 
               data-tauri-drag-region
-              className="text-sm sm:text-base md:text-[17px] font-bold tracking-tight text-white select-none whitespace-nowrap leading-tight text-left"
+              className="text-[13px] sm:text-sm font-bold tracking-tight text-white select-none whitespace-nowrap leading-tight text-left"
             >
               FAE 项目进度管理
             </span>
             <span 
               data-tauri-drag-region
-              className="hidden xl:block text-[8.5px] font-bold text-white/60 uppercase tracking-[0.16em] drop-shadow-xs leading-none mt-1 text-left"
+              className="hidden 2xl:block text-[8px] font-bold text-white/60 uppercase tracking-[0.14em] drop-shadow-xs leading-none mt-0.5 text-left"
             >
               PROJECT GANTT DASHBOARD
             </span>
           </div>
 
-          <div className="hidden lg:block w-px h-6 bg-white/20 shrink-0 mx-0.5 sm:mx-1" />
+          <div className="hidden lg:block w-px h-4 bg-white/20 shrink-0 mx-0.5" />
 
-          {/* Time Display Capsule Pill */}
+          {/* Time Display Capsule Pill - Always shows Date, Weekday & Time */}
           <button
             data-no-drag="true"
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => scrollToToday("smooth")}
-            className="h-9 sm:h-10 px-2.5 sm:px-3.5 py-1 rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/[0.14] active:scale-95 backdrop-blur-md flex flex-col justify-center text-left shrink-0 cursor-pointer transition-all duration-150 select-none group no-drag relative z-10 shadow-xs"
+            className="h-8 px-2.5 rounded-xl border border-white/20 bg-white/[0.07] hover:bg-white/[0.15] active:scale-95 backdrop-blur-md flex flex-col justify-center text-left shrink-0 cursor-pointer transition-all duration-150 select-none group no-drag relative z-10 shadow-xs box-border overflow-hidden"
             title="点击回到今天"
           >
-            <span className={cn(
-              "text-[9px] font-medium text-white/70 group-hover:text-white transition-colors tabular-nums tracking-wide leading-none mb-0.5",
-              windowWidth < 1280 ? "hidden" : "block"
-            )}>
+            <span className="text-[8.5px] font-medium text-white/75 group-hover:text-white transition-colors tabular-nums tracking-tight leading-none mb-1 whitespace-nowrap">
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月{currentDate.getDate()}日 {["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][currentDate.getDay()]}
             </span>
-            <span className="text-xs sm:text-sm font-extrabold text-white group-hover:text-white transition-colors tabular-nums tracking-widest leading-none">
+            <span className="text-[11px] font-bold text-white group-hover:text-white transition-colors tabular-nums tracking-wider leading-none whitespace-nowrap">
               {String(currentDate.getHours()).padStart(2, '0')}:{String(currentDate.getMinutes()).padStart(2, '0')}:{String(currentDate.getSeconds()).padStart(2, '0')}
             </span>
           </button>
@@ -1957,11 +1954,11 @@ export default function App() {
           style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
         />
 
-        {/* Right Section: Core Controls & Tools matching screenshot */}
+        {/* Right Section: Core Controls & Tools */}
         <div 
           data-tauri-drag-region
           onMouseDown={handleWindowDrag}
-          className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 relative z-10 max-w-full overflow-x-auto no-scrollbar py-0.5"
+          className="flex items-center gap-1 sm:gap-1.5 shrink-0 relative z-10 py-0.5"
         >
           {/* Risk Pill Button */}
           <div className="flex items-center gap-1 shrink-0">
@@ -1971,7 +1968,7 @@ export default function App() {
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setFilterRisk(!filterRisk)}
               className={cn(
-                "h-9 sm:h-10 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-2xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag",
+                "h-8 flex items-center gap-1 px-2 rounded-xl border text-[11px] transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag whitespace-nowrap",
                 filterRisk
                   ? "bg-red-500/25 text-red-100 border-red-500/40 font-bold"
                   : "bg-white/[0.08] hover:bg-white/[0.18] text-white/90 hover:text-white border-white/20 hover:border-white/30 font-semibold",
@@ -1988,7 +1985,7 @@ export default function App() {
                 data-tauri-drag-region="false"
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterStatus(null)}
-                className="h-9 sm:h-10 flex items-center gap-1 px-2 sm:px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
+                className="h-8 flex items-center gap-1 px-1.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-[11px] font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
                 title="清除状态筛选"
               >
                 <span>{filterStatus}</span>
@@ -2001,7 +1998,7 @@ export default function App() {
                 data-tauri-drag-region="false"
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterProductLine(null)}
-                className="h-9 sm:h-10 flex items-center gap-1 px-2 sm:px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
+                className="h-8 flex items-center gap-1 px-1.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-[11px] font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
                 title="清除产品线筛选"
               >
                 <span>{filterProductLine}</span>
@@ -2014,7 +2011,7 @@ export default function App() {
                 data-tauri-drag-region="false"
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterSales(null)}
-                className="h-9 sm:h-10 flex items-center gap-1 px-2 sm:px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
+                className="h-8 flex items-center gap-1 px-1.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-[11px] font-bold transition-all shadow-xs shrink-0 cursor-pointer no-drag"
                 title="清除 Sales 筛选"
               >
                 <span>{filterSales}</span>
@@ -2023,7 +2020,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="w-px h-5 bg-white/20 shrink-0 mx-0.5 hidden sm:block" />
+          <div className="w-px h-4 bg-white/20 shrink-0 mx-0.5 hidden sm:block" />
 
           {/* View Mode Switcher (Day/Week/Month) */}
           {displayMode === "gantt" && (
@@ -2031,7 +2028,7 @@ export default function App() {
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-              className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+              className="flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/20 rounded-xl shrink-0 backdrop-blur-md no-drag"
             >
               {(["day", "week", "month"] as ViewMode[]).map((mode) => (
                 <button
@@ -2040,12 +2037,12 @@ export default function App() {
                   style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className="relative h-7 sm:h-8 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors"
+                  className="relative h-6.5 px-2 rounded-lg text-[11px] shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors"
                 >
                   {viewMode === mode && (
                     <motion.div
                       layoutId="activeViewModeIndicator"
-                      className="absolute inset-0 bg-white/25 rounded-xl border border-white/30 shadow-xs backdrop-blur-md"
+                      className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
                       transition={{ type: "spring", stiffness: 480, damping: 32 }}
                     />
                   )}
@@ -2070,10 +2067,10 @@ export default function App() {
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => { setShowAddCustomerModal(true); }}
-            className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/30 transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
+            className="h-8 flex items-center justify-center gap-1 px-2 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-xl border border-white/20 hover:border-white/30 transition-all text-[11px] font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
             title="添加新客户"
           >
-            <Plus className="w-4 h-4 shrink-0 text-white" />
+            <Plus className="w-3.5 h-3.5 shrink-0 text-white" />
             <span>添加</span>
           </button>
 
@@ -2082,19 +2079,19 @@ export default function App() {
             data-no-drag="true"
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-            className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+            className="flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/20 rounded-xl shrink-0 backdrop-blur-md no-drag"
           >
             <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              className="h-6.5 w-5 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
               title="缩小"
             >
-              <Minus className="w-3.5 h-3.5" />
+              <Minus className="w-3 h-3" />
             </button>
-            <span className="text-[11px] font-semibold w-8 sm:w-10 text-center tabular-nums shrink-0 text-white select-none">
+            <span className="text-[10px] font-semibold w-7 text-center tabular-nums shrink-0 text-white select-none">
               {Math.round(zoom * 100)}%
             </span>
             <button
@@ -2102,10 +2099,10 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-              className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              className="h-6.5 w-5 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
               title="放大"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3 h-3" />
             </button>
           </div>
 
@@ -2114,26 +2111,26 @@ export default function App() {
             data-no-drag="true"
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-            className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+            className="flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/20 rounded-xl shrink-0 backdrop-blur-md no-drag"
           >
             <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setDisplayMode("gantt")}
-              className="relative h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-6.5 px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="甘特图模式"
             >
               {displayMode === "gantt" && (
                 <motion.div
                   layoutId="activeDisplayModeIndicator"
-                  className="absolute inset-0 bg-white/25 rounded-xl border border-white/30 shadow-xs backdrop-blur-md"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
                   transition={{ type: "spring", stiffness: 480, damping: 32 }}
                 />
               )}
               <LayoutList
                 className={cn(
-                  "w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-colors drop-shadow-xs",
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
                   displayMode === "gantt" ? "text-white" : "text-white/70 hover:text-white",
                 )}
               />
@@ -2143,19 +2140,19 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setDisplayMode("excel")}
-              className="relative h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-6.5 px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="Excel 表格模式"
             >
               {displayMode === "excel" && (
                 <motion.div
                   layoutId="activeDisplayModeIndicator"
-                  className="absolute inset-0 bg-white/25 rounded-xl border border-white/30 shadow-xs backdrop-blur-md"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
                   transition={{ type: "spring", stiffness: 480, damping: 32 }}
                 />
               )}
               <Table
                 className={cn(
-                  "w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-colors drop-shadow-xs",
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
                   displayMode === "excel" ? "text-white" : "text-white/70 hover:text-white",
                 )}
               />
@@ -2167,26 +2164,26 @@ export default function App() {
             data-no-drag="true"
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-            className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+            className="flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/20 rounded-xl shrink-0 backdrop-blur-md no-drag"
           >
             <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setIsDarkMode(false)}
-              className="relative h-7 sm:h-8 px-1.5 sm:px-2 rounded-xl text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-6.5 px-1.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="白天模式"
             >
               {!isDarkMode && (
                 <motion.div
                   layoutId="activeThemeIndicator"
-                  className="absolute inset-0 bg-white/25 rounded-xl border border-white/30 shadow-xs backdrop-blur-md"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
                   transition={{ type: "spring", stiffness: 480, damping: 32 }}
                 />
               )}
               <Sun
                 className={cn(
-                  "w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-colors drop-shadow-xs",
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
                   !isDarkMode ? "text-white" : "text-white/70 hover:text-white",
                 )}
               />
@@ -2196,39 +2193,39 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setIsDarkMode(true)}
-              className="relative h-7 sm:h-8 px-1.5 sm:px-2 rounded-xl text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-6.5 px-1.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
               title="暗黑模式"
             >
               {isDarkMode && (
                 <motion.div
                   layoutId="activeThemeIndicator"
-                  className="absolute inset-0 bg-white/25 rounded-xl border border-white/30 shadow-xs backdrop-blur-md"
+                  className="absolute inset-0 bg-white/25 rounded-lg border border-white/30 shadow-xs backdrop-blur-md"
                   transition={{ type: "spring", stiffness: 480, damping: 32 }}
                 />
               )}
               <Moon
                 className={cn(
-                  "w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-colors drop-shadow-xs",
+                  "w-3.5 h-3.5 relative z-10 transition-colors drop-shadow-xs",
                   isDarkMode ? "text-white" : "text-white/70 hover:text-white",
                 )}
               />
             </button>
           </div>
 
-          <div className="w-px h-5 bg-white/20 shrink-0 mx-0.5 hidden sm:block" />
+          <div className="w-px h-4 bg-white/20 shrink-0 mx-0.5 hidden sm:block" />
 
           {/* Action Tools: All icons always directly displayed and accessible */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Wallpaper Picker */}
             <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setIsWallpaperPickerOpen(true)}
-              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-xl border border-white/20 hover:border-white/35 transition-all shrink-0 cursor-pointer shadow-xs no-drag"
               title="桌面背景与外观微光设置"
             >
-              <Palette className="w-4 h-4 text-white" />
+              <Palette className="w-3.5 h-3.5 text-white" />
             </button>
 
             {/* Import Excel */}
@@ -2237,10 +2234,10 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => fileInputRef.current?.click()}
-              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
+              className="h-8 flex items-center justify-center gap-1 px-2 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-xl border border-white/20 hover:border-white/35 transition-all text-[11px] font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
               title="导入 Excel"
             >
-              <Upload className="w-4 h-4 shrink-0" />
+              <Upload className="w-3.5 h-3.5 shrink-0" />
               <span>导入</span>
             </button>
 
@@ -2250,10 +2247,10 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={handleExportExcel}
-              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
+              className="h-8 flex items-center justify-center gap-1 px-2 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-xl border border-white/20 hover:border-white/35 transition-all text-[11px] font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
               title="导出 Excel"
             >
-              <Download className="w-4 h-4 shrink-0" />
+              <Download className="w-3.5 h-3.5 shrink-0" />
               <span>导出</span>
             </button>
 
@@ -2263,10 +2260,10 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setShowClearConfirm(true)}
-              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-500/40 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-500/40 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
               title="清空所有数据"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
 
             {/* Logout */}
@@ -2275,10 +2272,10 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={handleLogout}
-              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/80 hover:text-white border border-white/20 hover:border-white/35 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/80 hover:text-white border border-white/20 hover:border-white/35 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
               title="退出登录"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
