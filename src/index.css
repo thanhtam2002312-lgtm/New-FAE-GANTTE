@@ -9,8 +9,11 @@
 }
 
 @layer base {
+  html, body {
+    background-color: transparent !important;
+  }
   body {
-    @apply bg-[#ECEEF2] dark:bg-[#0A0B0E] text-white antialiased transition-colors duration-300 selection:bg-[#007AFF]/25 selection:text-white;
+    @apply text-white antialiased transition-colors duration-300 selection:bg-[#007AFF]/25 selection:text-white;
   }
   .dark {
     color-scheme: dark;

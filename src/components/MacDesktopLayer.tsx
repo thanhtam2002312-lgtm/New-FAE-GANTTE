@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+const isMacTauri = isTauri && isMac;
+
 export interface StoredWallpaper {
   id: string;
   name: string;
@@ -436,7 +440,7 @@ export const MacDesktopLayer: React.FC<MacDesktopLayerProps> = ({
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundAttachment: "fixed",
-          backgroundColor: "#11141A"
+          backgroundColor: isMacTauri ? "transparent" : "#11141A"
         }}
       >
         {/* Crisp Caustic Ambient Lighting - completely uniform */}
