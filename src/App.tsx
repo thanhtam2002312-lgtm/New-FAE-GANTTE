@@ -221,6 +221,46 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Window scaling for Tauri macOS
+  useEffect(() => {
+    if (!isMacTauri) return;
+    
+    let isResizing = false;
+    let resizeTimer: NodeJS.Timeout;
+
+    const handleResize = () => {
+      // Base width we consider "1x" zoom
+      const baseWidth = 1280; 
+      
+      // Calculate scale ratio based on current window width
+      let scale = window.innerWidth / baseWidth;
+      
+      // Clamp the scale to avoid extreme values
+      if (scale < 0.6) scale = 0.6;
+      if (scale > 1.5) scale = 1.5;
+
+      // Use document.body.style.zoom for WebKit (macOS Tauri backend)
+      (document.body.style as any).zoom = scale.toString();
+    };
+
+    const onResize = () => {
+      if (!isResizing) {
+        window.requestAnimationFrame(() => {
+          handleResize();
+          isResizing = false;
+        });
+        isResizing = true;
+      }
+    };
+
+    // Apply initially
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // --- Persistence ---
   useEffect(() => {
     localStorage.setItem("fae_zoom", zoom.toString());
@@ -1717,15 +1757,24 @@ export default function App() {
 
       {/* Top Bar */}
       <header 
-        data-tauri-drag-region={isTauri ? "true" : undefined}
         className={cn(
-          "relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20 drag-region",
+          "relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20",
           isMacTauri && "pl-20 md:pl-24"
         )}
       >
+        {/* Absolute Drag Layer for macOS Tauri */}
+        {isMacTauri && (
+          <div 
+            data-tauri-drag-region 
+            className="absolute top-0 left-0 right-0 bottom-0 z-0 drag-region" 
+            style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
+          />
+        )}
+
         <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none">
           {/* Mobile Menu Toggle */}
           <button
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="md:hidden p-2 text-white/75 hover:text-white rounded-lg transition-colors pointer-events-auto no-drag"
           >
@@ -1734,13 +1783,14 @@ export default function App() {
 
           <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-none">
             <button 
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setIsOverviewOpen(true)}
               className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white pointer-events-auto"
               title="查看数据概览"
             >
               <GanttChartSquare className="w-5 h-5 text-[var(--accent-color,#FFFFFF)] transition-colors" />
             </button>
-            <div className="shrink-0 pointer-events-auto">
+            <div className="shrink-0 pointer-events-auto" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
               <h1 
                 className="text-base md:text-lg font-bold tracking-tight cursor-pointer hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors no-drag inline-block pt-1 pb-1"
                 onClick={() => window.location.reload()}
@@ -1758,6 +1808,7 @@ export default function App() {
 
           {/* Time Display - Click to Scroll To Today */}
           <button
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => {
               scrollToToday("smooth");
             }}
@@ -1778,6 +1829,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pointer-events-none">
             {/* Risk filter */}
             <button
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setFilterRisk(!filterRisk)}
               className={cn(
                 "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag pointer-events-auto",
@@ -1793,6 +1845,7 @@ export default function App() {
 
             {filterStatus && (
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterStatus(null)}
                 className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除状态筛选"
@@ -1803,6 +1856,7 @@ export default function App() {
             )}
             {filterProductLine && (
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterProductLine(null)}
                 className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除产品线筛选"
@@ -1813,6 +1867,7 @@ export default function App() {
             )}
             {filterSales && (
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setFilterSales(null)}
                 className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除 Sales 筛选"
@@ -1827,9 +1882,13 @@ export default function App() {
 
           {/* View Mode Switcher (only show in gantt mode) - placed to the left of Add Customer to avoid layout jumping */}
           {displayMode === "gantt" && (
-            <div className="hidden sm:flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
+            <div 
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+              className="hidden sm:flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto"
+            >
               {(["day", "week", "month"] as ViewMode[]).map((mode) => (
                 <button
+                  style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   className="relative h-[26px] px-2.5 rounded-lg text-xs shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors pointer-events-auto"
@@ -1858,6 +1917,7 @@ export default function App() {
 
           {/* Add Customer Button */}
           <button
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => { setShowAddCustomerModal(true); }}
             className="h-8 flex items-center justify-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer pointer-events-auto"
             title="添加新客户"
@@ -1867,8 +1927,12 @@ export default function App() {
           </button>
 
           {/* Zoom Controls - Compact */}
-          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
+          <div 
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+            className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto"
+          >
             <button
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
               className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer pointer-events-auto"
               title="缩小"
@@ -1930,8 +1994,12 @@ export default function App() {
           </div>
 
           {/* Dark Mode Switcher */}
-          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
+          <div 
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+            className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto"
+          >
             <button
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setIsDarkMode(false)}
               className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors pointer-events-auto"
               title="白天模式"
@@ -1976,6 +2044,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 shrink-0 pointer-events-none">
               {/* Wallpaper Picker */}
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setIsWallpaperPickerOpen(true)}
                 className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="桌面背景与外观微光设置"
@@ -1985,6 +2054,7 @@ export default function App() {
 
               {/* Import Excel */}
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => fileInputRef.current?.click()}
                 className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap pointer-events-auto no-drag"
                 title="导入 Excel"
@@ -1995,6 +2065,7 @@ export default function App() {
 
               {/* Export Excel */}
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleExportExcel}
                 className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap pointer-events-auto no-drag"
                 title="导出 Excel"
@@ -2005,6 +2076,7 @@ export default function App() {
 
               {/* Clear Data */}
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={() => setShowClearConfirm(true)}
                 className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/70 hover:text-red-300 border border-white/15 hover:border-red-500/30 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="清空所有数据"
@@ -2014,13 +2086,14 @@ export default function App() {
 
               {/* Logout */}
               <button
+                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleLogout}
                 className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/70 hover:text-white border border-white/15 hover:border-white/25 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="退出登录"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
-            </div>
+          </div>
           </div>
       </header>
 
