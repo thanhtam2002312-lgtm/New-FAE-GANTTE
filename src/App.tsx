@@ -61,6 +61,7 @@ import { GlassSelect } from "./components/GlassSelect";
 import { getBadgeColor } from "./utils/colors";
 import { get, set, del } from "idb-keyval";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 
 const STORAGE_KEY = "fae_gantt_data_v3";
 
@@ -90,6 +91,18 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Enforce desktop minimum window size (1024 x 640)
+  useEffect(() => {
+    if (isTauriEnv()) {
+      try {
+        const appWindow = getCurrentWindow();
+        appWindow.setMinSize(new LogicalSize(1024, 640)).catch(() => {});
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   const isMacTauri = isMacPlatform();
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -100,27 +113,6 @@ export default function App() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
-        setIsMoreMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsMoreMenuOpen(false);
-    };
-    if (isMoreMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isMoreMenuOpen]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1865,7 +1857,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative flex flex-col h-screen font-sans overflow-hidden text-white transition-colors duration-300">
+    <div className="relative flex flex-col h-screen w-full min-w-[1024px] min-h-[640px] font-sans overflow-hidden text-white transition-colors duration-300">
       {/* macOS Desktop Wallpaper Layer */}
       <MacDesktopLayer 
         isPickerOpen={isWallpaperPickerOpen} 
@@ -1941,15 +1933,12 @@ export default function App() {
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => scrollToToday("smooth")}
-            className={cn(
-              "h-9 sm:h-10 px-2.5 sm:px-3.5 py-1 rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/[0.14] active:scale-95 backdrop-blur-md flex-col justify-center text-left shrink-0 cursor-pointer transition-all duration-150 select-none group no-drag relative z-10 shadow-xs",
-              windowWidth < 980 ? "hidden" : "flex"
-            )}
+            className="h-9 sm:h-10 px-2.5 sm:px-3.5 py-1 rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/[0.14] active:scale-95 backdrop-blur-md flex flex-col justify-center text-left shrink-0 cursor-pointer transition-all duration-150 select-none group no-drag relative z-10 shadow-xs"
             title="点击回到今天"
           >
             <span className={cn(
               "text-[9px] font-medium text-white/70 group-hover:text-white transition-colors tabular-nums tracking-wide leading-none mb-0.5",
-              windowWidth < 1250 ? "hidden" : "block"
+              windowWidth < 1280 ? "hidden" : "block"
             )}>
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月{currentDate.getDate()}日 {["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][currentDate.getDay()]}
             </span>
@@ -1982,7 +1971,7 @@ export default function App() {
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => setFilterRisk(!filterRisk)}
               className={cn(
-                "h-9 sm:h-10 flex items-center gap-1.5 px-2.5 sm:px-3.5 rounded-2xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag",
+                "h-9 sm:h-10 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-2xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag",
                 filterRisk
                   ? "bg-red-500/25 text-red-100 border-red-500/40 font-bold"
                   : "bg-white/[0.08] hover:bg-white/[0.18] text-white/90 hover:text-white border-white/20 hover:border-white/30 font-semibold",
@@ -2081,46 +2070,44 @@ export default function App() {
             data-tauri-drag-region="false"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             onClick={() => { setShowAddCustomerModal(true); }}
-            className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/30 transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
+            className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/30 transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
             title="添加新客户"
           >
             <Plus className="w-4 h-4 shrink-0 text-white" />
-            <span className={windowWidth < 1280 ? "hidden" : "inline"}>添加客户</span>
+            <span>添加</span>
           </button>
 
-          {/* Zoom Controls - Hidden on screens < 1120px to prioritize tools */}
-          {windowWidth >= 1120 && (
-            <div 
+          {/* Zoom Controls - Always visible and functional */}
+          <div 
+            data-no-drag="true"
+            data-tauri-drag-region="false"
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+            className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+          >
+            <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-              className="flex h-9 sm:h-10 items-center p-0.5 sm:p-1 bg-white/[0.08] border border-white/20 rounded-2xl shrink-0 backdrop-blur-md no-drag"
+              onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+              className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              title="缩小"
             >
-              <button
-                data-no-drag="true"
-                data-tauri-drag-region="false"
-                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-                className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
-                title="缩小"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[11px] font-semibold w-8 sm:w-10 text-center tabular-nums shrink-0 text-white select-none">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                data-no-drag="true"
-                data-tauri-drag-region="false"
-                style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-                className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
-                title="放大"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] font-semibold w-8 sm:w-10 text-center tabular-nums shrink-0 text-white select-none">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              data-no-drag="true"
+              data-tauri-drag-region="false"
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+              onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+              className="h-7 sm:h-8 w-5 sm:w-6 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              title="放大"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {/* Display Mode Switcher (Gantt vs Excel) */}
           <div 
@@ -2230,19 +2217,31 @@ export default function App() {
 
           <div className="w-px h-5 bg-white/20 shrink-0 mx-0.5 hidden sm:block" />
 
-          {/* Action Tools: Import, Export, and (Wallpaper, Trash, Logout or More menu) */}
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+          {/* Action Tools: All icons always directly displayed and accessible */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Wallpaper Picker */}
+            <button
+              data-no-drag="true"
+              data-tauri-drag-region="false"
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+              onClick={() => setIsWallpaperPickerOpen(true)}
+              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              title="桌面背景与外观微光设置"
+            >
+              <Palette className="w-4 h-4 text-white" />
+            </button>
+
             {/* Import Excel */}
             <button
               data-no-drag="true"
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={() => fileInputRef.current?.click()}
-              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
+              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
               title="导入 Excel"
             >
               <Upload className="w-4 h-4 shrink-0" />
-              <span className={windowWidth < 1350 ? "hidden" : "inline"}>导入</span>
+              <span>导入</span>
             </button>
 
             {/* Export Excel */}
@@ -2251,119 +2250,36 @@ export default function App() {
               data-tauri-drag-region="false"
               style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
               onClick={handleExportExcel}
-              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
+              className="h-9 sm:h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap no-drag"
               title="导出 Excel"
             >
               <Download className="w-4 h-4 shrink-0" />
-              <span className={windowWidth < 1350 ? "hidden" : "inline"}>导出</span>
+              <span>导出</span>
             </button>
 
-            {/* Secondary Actions: Show individual buttons on wide screens (>= 1150px), or collapse into 'More' menu on narrower windows */}
-            {windowWidth >= 1150 ? (
-              <>
-                {/* Wallpaper Picker */}
-                <button
-                  data-no-drag="true"
-                  data-tauri-drag-region="false"
-                  style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                  onClick={() => setIsWallpaperPickerOpen(true)}
-                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white rounded-2xl border border-white/20 hover:border-white/35 transition-all shrink-0 cursor-pointer shadow-xs no-drag"
-                  title="桌面背景与外观微光设置"
-                >
-                  <Palette className="w-4 h-4 text-white" />
-                </button>
+            {/* Clear Data */}
+            <button
+              data-no-drag="true"
+              data-tauri-drag-region="false"
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+              onClick={() => setShowClearConfirm(true)}
+              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-500/40 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              title="清空所有数据"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
 
-                {/* Clear Data */}
-                <button
-                  data-no-drag="true"
-                  data-tauri-drag-region="false"
-                  style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                  onClick={() => setShowClearConfirm(true)}
-                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-500/40 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
-                  title="清空所有数据"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-
-                {/* Logout */}
-                <button
-                  data-no-drag="true"
-                  data-tauri-drag-region="false"
-                  style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                  onClick={handleLogout}
-                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/80 hover:text-white border border-white/20 hover:border-white/35 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
-                  title="退出登录"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <div className="relative shrink-0" ref={moreMenuRef}>
-                <button
-                  data-no-drag="true"
-                  data-tauri-drag-region="false"
-                  style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                  onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className={cn(
-                    "h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-2xl border transition-all shrink-0 cursor-pointer shadow-xs no-drag active:scale-95",
-                    isMoreMenuOpen
-                      ? "bg-white/25 border-white/40 text-white"
-                      : "bg-white/[0.08] hover:bg-white/[0.18] text-white/80 hover:text-white border-white/20 hover:border-white/35"
-                  )}
-                  title="更多选项与设置"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-
-                <AnimatePresence>
-                  {isMoreMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute right-0 top-full mt-2 w-44 rounded-2xl bg-slate-900/90 dark:bg-slate-950/95 border border-white/20 backdrop-blur-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs"
-                      style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-                    >
-                      <button
-                        onClick={() => {
-                          setIsMoreMenuOpen(false);
-                          setIsWallpaperPickerOpen(true);
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-white/15 text-white transition-colors cursor-pointer"
-                      >
-                        <Palette className="w-4 h-4 text-white/80" />
-                        <span>桌面背景微光</span>
-                      </button>
-
-                      <div className="h-px bg-white/15 my-0.5" />
-
-                      <button
-                        onClick={() => {
-                          setIsMoreMenuOpen(false);
-                          setShowClearConfirm(true);
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-red-500/25 text-red-200 hover:text-red-100 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-300" />
-                        <span>清空所有数据</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setIsMoreMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4 text-white/70" />
-                        <span>退出登录</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+            {/* Logout */}
+            <button
+              data-no-drag="true"
+              data-tauri-drag-region="false"
+              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+              onClick={handleLogout}
+              className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/80 hover:text-white border border-white/20 hover:border-white/35 rounded-2xl transition-all shrink-0 cursor-pointer shadow-xs no-drag"
+              title="退出登录"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>

@@ -18,6 +18,8 @@
         "title": "FAE Dashboard",
         "width": 1280,
         "height": 800,
+        "minWidth": 1024,
+        "minHeight": 640,
         "resizable": true,
         "fullscreen": false,
         "transparent": true,

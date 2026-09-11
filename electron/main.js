@@ -12,6 +12,8 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 1024,
+    minHeight: 640,
     icon: iconPath,
     titleBarStyle: 'hiddenInset', // Adds a nice native mac feel
     webPreferences: {
