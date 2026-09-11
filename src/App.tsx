@@ -1890,10 +1890,11 @@ export default function App() {
         onMouseDown={handleWindowDrag}
         onDoubleClick={handleHeaderDoubleClick}
         className={cn(
-          "relative glass-nav text-white h-[66px] md:h-[70px] flex items-center justify-between shrink-0 shadow-sm gap-1 sm:gap-2 z-20 select-none",
-          isMacTauri
-            ? "pl-[84px] md:pl-[88px] pr-3 sm:pr-4 md:pr-5 lg:pr-6"
-            : "px-3 sm:px-4 md:px-5 lg:px-6"
+          "relative glass-nav text-white flex items-center justify-between shrink-0 shadow-sm gap-1 sm:gap-2 z-20 select-none",
+          "px-3 sm:px-4 md:px-5 lg:px-6",
+          isMacPlatform()
+            ? "h-[74px] md:h-[78px] pt-[28px] md:pt-[30px] pb-2 md:pb-2.5"
+            : "h-[66px] md:h-[70px] pt-1 pb-1"
         )}
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       >
