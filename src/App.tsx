@@ -1723,7 +1723,7 @@ export default function App() {
           isMacTauri && "pl-20 md:pl-24"
         )}
       >
-        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none no-drag">
+        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1732,15 +1732,15 @@ export default function App() {
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-auto no-drag">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-none">
             <button 
               onClick={() => setIsOverviewOpen(true)}
-              className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
+              className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white pointer-events-auto"
               title="查看数据概览"
             >
               <GanttChartSquare className="w-5 h-5 text-[var(--accent-color,#FFFFFF)] transition-colors" />
             </button>
-            <div className="shrink-0">
+            <div className="shrink-0 pointer-events-auto">
               <h1 
                 className="text-base md:text-lg font-bold tracking-tight cursor-pointer hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors no-drag inline-block pt-1 pb-1"
                 onClick={() => window.location.reload()}
@@ -1761,7 +1761,7 @@ export default function App() {
             onClick={() => {
               scrollToToday("smooth");
             }}
-            className="hidden sm:flex flex-col justify-center text-left shrink-0 cursor-pointer hover:bg-white/[0.08] p-1 px-2.5 rounded-xl active:scale-95 transition-all duration-150 select-none group border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] no-drag relative z-10"
+            className="hidden sm:flex flex-col justify-center text-left shrink-0 cursor-pointer hover:bg-white/[0.08] p-1 px-2.5 rounded-xl active:scale-95 transition-all duration-150 select-none group border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] no-drag relative z-10 pointer-events-auto"
             title="点击回到今天"
           >
             <span className="text-[10px] font-medium text-white/70 group-hover:text-[var(--accent-hover-color,#FFFFFF)] transition-colors tabular-nums tracking-wider leading-none">
@@ -1773,14 +1773,14 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 relative z-10 no-drag">
+        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 relative z-10 pointer-events-none">
           {/* Filter & Actions (风险及弹出的筛选标签，置于左侧，向中间自然延展，杜绝右侧操作区跳动) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pointer-events-none">
             {/* Risk filter */}
             <button
               onClick={() => setFilterRisk(!filterRisk)}
               className={cn(
-                "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag",
+                "h-8 flex items-center gap-1.5 px-3 rounded-xl border text-xs transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 no-drag pointer-events-auto",
                 filterRisk
                   ? "bg-red-500/25 text-red-100 border-red-500/40 font-bold"
                   : "bg-white/[0.08] hover:bg-white/[0.18] text-white/80 hover:text-white border-white/15 hover:border-white/25 font-semibold",
@@ -1794,7 +1794,7 @@ export default function App() {
             {filterStatus && (
               <button
                 onClick={() => setFilterStatus(null)}
-                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除状态筛选"
               >
                 <span>{filterStatus}</span>
@@ -1804,7 +1804,7 @@ export default function App() {
             {filterProductLine && (
               <button
                 onClick={() => setFilterProductLine(null)}
-                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除产品线筛选"
               >
                 <span>{filterProductLine}</span>
@@ -1814,7 +1814,7 @@ export default function App() {
             {filterSales && (
               <button
                 onClick={() => setFilterSales(null)}
-                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                className="h-8 flex items-center gap-1 px-2.5 bg-white/[0.12] hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer pointer-events-auto no-drag"
                 title="清除 Sales 筛选"
               >
                 <span>{filterSales}</span>
@@ -1827,12 +1827,12 @@ export default function App() {
 
           {/* View Mode Switcher (only show in gantt mode) - placed to the left of Add Customer to avoid layout jumping */}
           {displayMode === "gantt" && (
-            <div className="hidden sm:flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
+            <div className="hidden sm:flex h-8 items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
               {(["day", "week", "month"] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className="relative h-[26px] px-2.5 rounded-lg text-xs shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors"
+                  className="relative h-[26px] px-2.5 rounded-lg text-xs shrink-0 no-drag cursor-pointer flex items-center justify-center transition-colors pointer-events-auto"
                 >
                   {viewMode === mode && (
                     <motion.div
@@ -1859,7 +1859,7 @@ export default function App() {
           {/* Add Customer Button */}
           <button
             onClick={() => { setShowAddCustomerModal(true); }}
-            className="h-8 flex items-center justify-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer"
+            className="h-8 flex items-center justify-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.25))] transition-all text-xs font-semibold shrink-0 select-none whitespace-nowrap no-drag shadow-xs cursor-pointer pointer-events-auto"
             title="添加新客户"
           >
             <Plus className="w-3.5 h-3.5 shrink-0 text-[var(--accent-color,#FFFFFF)] transition-colors" />
@@ -1867,10 +1867,10 @@ export default function App() {
           </button>
 
           {/* Zoom Controls - Compact */}
-          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
             <button
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer pointer-events-auto"
               title="缩小"
             >
               <Minus className="w-3.5 h-3.5" />
@@ -1880,7 +1880,7 @@ export default function App() {
             </span>
             <button
               onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer"
+              className="h-[26px] w-6 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0 no-drag cursor-pointer pointer-events-auto"
               title="放大"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1888,10 +1888,10 @@ export default function App() {
           </div>
 
           {/* Display Mode Switcher */}
-          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
             <button
               onClick={() => setDisplayMode("gantt")}
-              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors pointer-events-auto"
               title="甘特图模式"
             >
               {displayMode === "gantt" && (
@@ -1910,7 +1910,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setDisplayMode("excel")}
-              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-[26px] px-2.5 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors pointer-events-auto"
               title="Excel 表格模式"
             >
               {displayMode === "excel" && (
@@ -1930,10 +1930,10 @@ export default function App() {
           </div>
 
           {/* Dark Mode Switcher */}
-          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag">
+          <div className="h-8 flex items-center p-0.5 bg-white/[0.08] border border-white/15 rounded-xl shrink-0 backdrop-blur-md no-drag pointer-events-auto">
             <button
               onClick={() => setIsDarkMode(false)}
-              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors pointer-events-auto"
               title="白天模式"
             >
               {!isDarkMode && (
@@ -1952,7 +1952,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setIsDarkMode(true)}
-              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors"
+              className="relative h-[26px] px-2 rounded-lg text-xs flex items-center justify-center shrink-0 no-drag cursor-pointer transition-colors pointer-events-auto"
               title="晚上模式"
             >
               {isDarkMode && (
@@ -1973,11 +1973,11 @@ export default function App() {
 
           <div className="hidden sm:block w-px h-5 bg-white/15 shrink-0" />
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 pointer-events-none">
               {/* Wallpaper Picker */}
               <button
                 onClick={() => setIsWallpaperPickerOpen(true)}
-                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] transition-all shrink-0 cursor-pointer shadow-xs"
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="桌面背景与外观微光设置"
               >
                 <Palette className="w-3.5 h-3.5 text-[var(--accent-color,#FFFFFF)] transition-colors" />
@@ -1986,7 +1986,7 @@ export default function App() {
               {/* Import Excel */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
+                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap pointer-events-auto no-drag"
                 title="导入 Excel"
               >
                 <Upload className="w-3.5 h-3.5 shrink-0" />
@@ -1996,7 +1996,7 @@ export default function App() {
               {/* Export Excel */}
               <button
                 onClick={handleExportExcel}
-                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
+                className="h-8 flex items-center gap-1.5 px-3 bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/90 hover:text-white rounded-xl border border-white/15 hover:border-white/25 transition-all text-xs font-semibold shrink-0 cursor-pointer shadow-xs whitespace-nowrap pointer-events-auto no-drag"
                 title="导出 Excel"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
@@ -2006,7 +2006,7 @@ export default function App() {
               {/* Clear Data */}
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/70 hover:text-red-300 border border-white/15 hover:border-red-500/30 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs"
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-red-500/20 active:scale-95 text-white/70 hover:text-red-300 border border-white/15 hover:border-red-500/30 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="清空所有数据"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -2015,7 +2015,7 @@ export default function App() {
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/70 hover:text-white border border-white/15 hover:border-white/25 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs"
+                className="h-8 w-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 text-white/70 hover:text-white border border-white/15 hover:border-white/25 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs pointer-events-auto no-drag"
                 title="退出登录"
               >
                 <LogOut className="w-3.5 h-3.5" />
