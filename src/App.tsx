@@ -1719,11 +1719,11 @@ export default function App() {
       <header 
         data-tauri-drag-region={isTauri ? "true" : undefined}
         className={cn(
-          "relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20",
+          "relative glass-nav text-white h-20 px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm gap-3 overflow-x-auto no-scrollbar whitespace-nowrap z-20 drag-region",
           isMacTauri && "pl-20 md:pl-24"
         )}
       >
-        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none">
+        <div className="flex items-center gap-4 md:gap-6 shrink-0 relative z-10 pointer-events-none no-drag">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1732,7 +1732,7 @@ export default function App() {
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-auto">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0 pointer-events-auto no-drag">
             <button 
               onClick={() => setIsOverviewOpen(true)}
               className="h-9 w-9 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.18] active:scale-95 border border-white/20 hover:border-[var(--accent-border,rgba(255,255,255,0.3))] rounded-xl shadow-xs transition-all shrink-0 no-drag cursor-pointer text-white"
@@ -1773,7 +1773,7 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 relative z-10">
+        <div className="flex items-center gap-2 md:gap-2.5 shrink-0 relative z-10 no-drag">
           {/* Filter & Actions (风险及弹出的筛选标签，置于左侧，向中间自然延展，杜绝右侧操作区跳动) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Risk filter */}
