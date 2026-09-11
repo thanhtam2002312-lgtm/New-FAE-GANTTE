@@ -10,6 +10,7 @@
     "beforeBuildCommand": "npm run build:tauri"
   },
   "app": {
+    "withGlobalTauri": true,
     "macOSPrivateApi": true,
     "windows": [
       {
